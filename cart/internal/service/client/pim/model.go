@@ -1,4 +1,4 @@
-package product
+package pim
 
 type GetProductRequest struct {
     Token string `json:"token"`
