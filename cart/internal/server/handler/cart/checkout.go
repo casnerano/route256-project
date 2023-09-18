@@ -1,21 +1,15 @@
 package cart
 
 import (
-    "net/http"
-    "time"
+	"net/http"
+	"time"
 )
 
-type checkoutHandler struct{}
+func (h *Handler) Checkout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
 
-func NewCheckoutHandler() *checkoutHandler {
-    return &checkoutHandler{}
-}
-
-func (lh *checkoutHandler) Checkout(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPost {
-        w.WriteHeader(http.StatusMethodNotAllowed)
-        return
-    }
-
-    time.Sleep(time.Second)
+	time.Sleep(time.Second)
 }

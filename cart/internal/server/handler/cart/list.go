@@ -10,10 +10,6 @@ import (
 	"time"
 )
 
-type Lister interface {
-	List(ctx context.Context, userID model.UserID) ([]*model.CartItem, error)
-}
-
 type listRequest struct {
 	User model.UserID `json:"user"`
 }
@@ -30,20 +26,7 @@ type listResponse struct {
 	TotalPrice uint32              `json:"totalPrice"`
 }
 
-type listHandler struct {
-	lister Lister
-}
-
-func NewListHandler(lister Lister) *listHandler {
-	return &listHandler{lister: lister}
-}
-
-func (l *listHandler) List(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := r.Body.Close(); err != nil {
 			log.Printf("Failed close request body: %s\n", debug.Stack())
@@ -59,7 +42,7 @@ func (l *listHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Second)
 	defer cancel()
 
-	list, err := l.lister.List(ctx, listRequestStruct.User)
+	list, err := h.modifier.List(ctx, listRequestStruct.User)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

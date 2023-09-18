@@ -5,12 +5,19 @@ import (
 	"net/http"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository/memstore"
-	cartHandler "route256/cart/internal/server/handler/cart"
-	"route256/cart/internal/service/cart"
+	hCart "route256/cart/internal/server/handler/cart"
+	sCart "route256/cart/internal/service/cart"
 	"route256/cart/internal/service/client/loms"
 	"route256/cart/internal/service/client/pim"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
+
+type handler struct {
+	cart *hCart.Handler
+}
 
 type server struct {
 	config     *config.Config
@@ -50,29 +57,34 @@ func (s *server) Shutdown() error {
 	return nil
 }
 
-func (s *server) init() {
-	// Init dependencies
+func (s *server) getHandler() *handler {
 	rep := memstore.NewCartRepository()
 
 	pimClient := pim.NewClient(s.config.PIM.Addr)
 	lomsClient := loms.NewClient(s.config.LOMS.Addr)
 
-	cartService := cart.New(rep, pimClient, lomsClient)
+	sc := sCart.New(rep, pimClient, lomsClient)
 
-	itemHandler := cartHandler.NewItemHandler(cartService)
-	listHandler := cartHandler.NewListHandler(cartService)
-	clearHandler := cartHandler.NewClearHandler(cartService)
-	checkoutHandler := cartHandler.NewCheckoutHandler()
+	return &handler{
+		cart: hCart.NewHandler(sc),
+	}
+}
 
-	// Init routes
-	mux := http.NewServeMux()
+func (s *server) init() {
+	h := s.getHandler()
 
-	mux.HandleFunc("/api/cart/item/add", itemHandler.Add)
-	mux.HandleFunc("/api/cart/item/delete", itemHandler.Delete)
+	router := chi.NewRouter()
+	router.Use(
+		middleware.SetHeader("Content-Type", "application/json"),
+		middleware.Recoverer,
+	)
 
-	mux.HandleFunc("/api/cart/list", listHandler.List)
-	mux.HandleFunc("/api/cart/clear", clearHandler.Clear)
-	mux.HandleFunc("/api/cart/checkout", checkoutHandler.Checkout)
+	router.Post("/api/cart/item/add", h.cart.Add)
+	router.Post("/api/cart/item/delete", h.cart.Delete)
 
-	s.httpServer.Handler = mux
+	router.Post("/api/cart/list", h.cart.List)
+	router.Post("/api/cart/clear", h.cart.Clear)
+	router.Post("/api/cart/checkout", h.cart.Checkout)
+
+	s.httpServer.Handler = router
 }

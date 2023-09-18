@@ -11,28 +11,11 @@ import (
 	"route256/cart/internal/model"
 )
 
-type Cleaner interface {
-	Clear(ctx context.Context, userID model.UserID) error
-}
-
 type clearRequest struct {
 	User model.UserID `json:"user"`
 }
 
-type clearHandler struct {
-	cleaner Cleaner
-}
-
-func NewClearHandler(cleaner Cleaner) *clearHandler {
-	return &clearHandler{cleaner: cleaner}
-}
-
-func (c *clearHandler) Clear(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-
+func (h *Handler) Clear(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := r.Body.Close(); err != nil {
 			log.Printf("Failed close request body: %s\n", debug.Stack())
@@ -48,7 +31,7 @@ func (c *clearHandler) Clear(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
 	defer cancel()
 
-	if err := c.cleaner.Clear(ctx, clearRequestStruct.User); err != nil {
+	if err := h.modifier.Clear(ctx, clearRequestStruct.User); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
