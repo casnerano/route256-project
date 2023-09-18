@@ -12,13 +12,13 @@ import (
 
 type itemAddRequest struct {
 	User  model.UserID `json:"user"`
-	SKU   uint32       `json:"SKU"`
+	SKU   model.SKU    `json:"SKU"`
 	Count uint16       `json:"count"`
 }
 
 type itemDeleteRequest struct {
 	User model.UserID `json:"user"`
-	SKU  uint32       `json:"SKU"`
+	SKU  model.SKU    `json:"SKU"`
 }
 
 func (h *Handler) Add(w http.ResponseWriter, r *http.Request) {

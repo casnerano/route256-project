@@ -15,10 +15,10 @@ type listRequest struct {
 }
 
 type listItemResponse struct {
-	SKU   uint32 `json:"sku"`
-	Count uint16 `json:"count"`
-	Name  string `json:"name"`
-	Price uint32 `json:"price"`
+	SKU   model.SKU `json:"sku"`
+	Count uint16    `json:"count"`
+	Name  string    `json:"name"`
+	Price uint32    `json:"price"`
 }
 
 type listResponse struct {

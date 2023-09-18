@@ -6,9 +6,9 @@ import (
 )
 
 type Modifier interface {
-	Add(ctx context.Context, userID model.UserID, sku uint32, count uint16) error
-	Delete(ctx context.Context, userID model.UserID, sku uint32) error
-	List(ctx context.Context, userID model.UserID) ([]*model.CartItem, error)
+	Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint16) error
+	Delete(ctx context.Context, userID model.UserID, sku model.SKU) error
+	List(ctx context.Context, userID model.UserID) ([]*model.CartItemDetail, error)
 	Clear(ctx context.Context, userID model.UserID) error
 }
 
