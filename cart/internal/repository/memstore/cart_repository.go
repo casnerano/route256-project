@@ -12,9 +12,8 @@ import (
 type cartStorage = map[model.UserID]map[model.SKU]uint16
 
 type cartRepository struct {
-	mu      *sync.RWMutex
-	store   cartStorage
-	counter int
+	mu    *sync.RWMutex
+	store cartStorage
 }
 
 func NewCartRepository() repository.Cart {
