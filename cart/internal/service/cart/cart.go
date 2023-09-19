@@ -2,10 +2,13 @@ package cart
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"route256/cart/internal/model"
 	"route256/cart/internal/repository"
 )
+
+var ErrNotFound = errors.New("rows not found")
 
 type PIMClient interface {
 	GetProductInfo(ctx context.Context, sku model.SKU) (*model.ProductInfo, error)
@@ -44,7 +47,14 @@ func (c *cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, coun
 }
 
 func (c *cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) error {
-	return c.rep.DeleteBySKU(ctx, userID, sku)
+	err := c.rep.DeleteBySKU(ctx, userID, sku)
+	if err != nil {
+		if err == repository.ErrRowNotFound {
+			return ErrNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 // List returns a detailed list of the cart items.
@@ -53,7 +63,10 @@ func (c *cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) e
 // TODO: the solution contains problem n+1 and incorrect behavior as a result of the context deadline.
 func (c *cart) List(ctx context.Context, userID model.UserID) ([]*model.CartItemDetail, error) {
 	list, err := c.rep.FindByUser(ctx, userID)
-	if err != nil && err != repository.ErrNotFound {
+	if err != nil {
+		if err == repository.ErrRowNotFound {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 
@@ -76,5 +89,12 @@ func (c *cart) List(ctx context.Context, userID model.UserID) ([]*model.CartItem
 }
 
 func (c *cart) Clear(ctx context.Context, userID model.UserID) error {
-	return c.rep.DeleteByUser(ctx, userID)
+	err := c.rep.DeleteByUser(ctx, userID)
+	if err != nil {
+		if err == repository.ErrRowNotFound {
+			return ErrNotFound
+		}
+		return err
+	}
+	return nil
 }

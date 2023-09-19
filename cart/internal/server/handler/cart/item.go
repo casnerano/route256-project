@@ -6,19 +6,20 @@ import (
 	"log"
 	"net/http"
 	"route256/cart/internal/model"
+	"route256/cart/internal/service/cart"
 	"runtime/debug"
 	"time"
 )
 
 type itemAddRequest struct {
 	User  model.UserID `json:"user"`
-	SKU   model.SKU    `json:"SKU"`
+	SKU   model.SKU    `json:"sku"`
 	Count uint16       `json:"count"`
 }
 
 type itemDeleteRequest struct {
 	User model.UserID `json:"user"`
-	SKU  model.SKU    `json:"SKU"`
+	SKU  model.SKU    `json:"sku"`
 }
 
 func (h *Handler) Add(w http.ResponseWriter, r *http.Request) {
@@ -30,6 +31,11 @@ func (h *Handler) Add(w http.ResponseWriter, r *http.Request) {
 
 	itemAddRequestStruct := itemAddRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&itemAddRequestStruct); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if itemAddRequestStruct.User == 0 || itemAddRequestStruct.SKU == 0 || itemAddRequestStruct.Count == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -63,10 +69,19 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if itemDeleteRequestStruct.User == 0 || itemDeleteRequestStruct.SKU == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
 	defer cancel()
 
 	if err := h.modifier.Delete(ctx, itemDeleteRequestStruct.User, itemDeleteRequestStruct.SKU); err != nil {
+		if err == cart.ErrNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

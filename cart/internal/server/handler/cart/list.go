@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"route256/cart/internal/model"
+	"route256/cart/internal/service/cart"
 	"runtime/debug"
 	"time"
 )
@@ -44,6 +45,10 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	list, err := h.modifier.List(ctx, listRequestStruct.User)
 	if err != nil {
+		if err == cart.ErrNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

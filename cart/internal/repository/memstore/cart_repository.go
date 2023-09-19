@@ -50,18 +50,18 @@ func (rep *cartRepository) FindByUser(_ context.Context, userID model.UserID) ([
 		}
 		return items, nil
 	}
-	return nil, repository.ErrNotFound
+	return nil, repository.ErrRowNotFound
 }
 
 func (rep *cartRepository) DeleteBySKU(_ context.Context, userID model.UserID, sku model.SKU) error {
-	if _, ok := rep.store[userID][sku]; !ok {
+	if _, ok := rep.store[userID][sku]; ok {
 		rep.mu.Lock()
 		defer rep.mu.Unlock()
 
 		delete(rep.store[userID], sku)
 		return nil
 	}
-	return repository.ErrNotFound
+	return repository.ErrRowNotFound
 }
 
 func (rep *cartRepository) DeleteByUser(_ context.Context, userID model.UserID) error {
@@ -72,5 +72,5 @@ func (rep *cartRepository) DeleteByUser(_ context.Context, userID model.UserID) 
 		delete(rep.store, userID)
 		return nil
 	}
-	return repository.ErrNotFound
+	return repository.ErrRowNotFound
 }
