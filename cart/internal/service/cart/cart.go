@@ -14,7 +14,9 @@ type PIMClient interface {
 	GetProductInfo(ctx context.Context, sku model.SKU) (*model.ProductInfo, error)
 }
 
-type LOMSClient interface{}
+type LOMSClient interface {
+	GetStockInfo(ctx context.Context, sku model.SKU) (uint64, error)
+}
 
 type cart struct {
 	rep  repository.Cart
@@ -36,12 +38,19 @@ func (c *cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, coun
 		return err
 	}
 
+	available, err := c.loms.GetStockInfo(ctx, sku)
+	if err != nil {
+		return err
+	}
+
+	if uint64(count) > available {
+		return errors.New("low availability in stock")
+	}
+
 	cartItem := model.CartItem{
 		SKU:   sku,
 		Count: count,
 	}
-
-	// todo: check stocks
 
 	return c.rep.Add(ctx, userID, &cartItem)
 }
