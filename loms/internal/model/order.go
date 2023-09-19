@@ -23,6 +23,6 @@ type Order struct {
 	ID        OrderID
 	Status    OrderStatus
 	User      UserID
-	Items     []OrderItem
+	Items     []*OrderItem
 	CreatedAt time.Time `json:"created_at"`
 }

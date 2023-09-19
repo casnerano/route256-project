@@ -4,6 +4,9 @@ import (
 	"context"
 	"net/http"
 	"route256/loms/internal/config"
+	"route256/loms/internal/repository/memstore"
+	hStock "route256/loms/internal/server/handler/stock"
+	sStock "route256/loms/internal/service/stock"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -11,6 +14,7 @@ import (
 )
 
 type handler struct {
+	stock *hStock.Handler
 }
 
 type server struct {
@@ -52,11 +56,18 @@ func (s *server) Shutdown() error {
 }
 
 func (s *server) getHandler() *handler {
-	return &handler{}
+	repStock := memstore.NewStockRepository()
+	//repOrder := memstore.NewOrderRepository()
+
+	ss := sStock.New(repStock)
+
+	return &handler{
+		stock: hStock.NewHandler(ss),
+	}
 }
 
 func (s *server) init() {
-	//h := s.getHandler()
+	h := s.getHandler()
 
 	router := chi.NewRouter()
 	router.Use(
@@ -64,7 +75,7 @@ func (s *server) init() {
 		middleware.Recoverer,
 	)
 
-	//router.Post("/api/cart/item/add", )
+	router.Post("/api/stock/info", h.stock.Info)
 
 	s.httpServer.Handler = router
 }

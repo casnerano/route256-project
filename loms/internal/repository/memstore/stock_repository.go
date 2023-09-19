@@ -3,6 +3,7 @@ package memstore
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
 	"sync"
@@ -24,7 +25,7 @@ func NewStockRepository() repository.Stock {
 
 var _ repository.Stock = (*stockRepository)(nil)
 
-func (rep *stockRepository) FindBySKU(ctx context.Context, sku model.SKU) (*model.Stock, error) {
+func (rep *stockRepository) FindBySKU(_ context.Context, sku model.SKU) (*model.Stock, error) {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -32,7 +33,7 @@ func (rep *stockRepository) FindBySKU(ctx context.Context, sku model.SKU) (*mode
 
 	if !ok {
 		stub := model.Stock{
-			Available: 0,
+			Available: rand.Uint64() % 100,
 			Reserved:  0,
 		}
 		rep.store[sku] = &stub
@@ -42,7 +43,7 @@ func (rep *stockRepository) FindBySKU(ctx context.Context, sku model.SKU) (*mode
 	return stock, nil
 }
 
-func (rep *stockRepository) AddReserve(ctx context.Context, sku model.SKU, count uint64) error {
+func (rep *stockRepository) AddReserve(_ context.Context, sku model.SKU, count uint64) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -60,7 +61,7 @@ func (rep *stockRepository) AddReserve(ctx context.Context, sku model.SKU, count
 	return repository.ErrRowNotFound
 }
 
-func (rep *stockRepository) CancelReserve(ctx context.Context, sku model.SKU, count uint64) error {
+func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, count uint64) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
