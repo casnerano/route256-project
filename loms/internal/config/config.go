@@ -17,6 +17,9 @@ type Config struct {
 	Server struct {
 		Addr string `yaml:"addr"`
 	} `yaml:"server"`
+	Order struct {
+		CancelUnpaidTimeout uint64 `yaml:"cancel_unpaid_timeout"`
+	} `yaml:"order"`
 }
 
 func New() (*Config, error) {
@@ -33,6 +36,7 @@ func New() (*Config, error) {
 
 func (c *Config) SetDefaultValues() {
 	c.Server.Addr = "127.0.0.1:8082"
+	c.Order.CancelUnpaidTimeout = 600
 }
 
 func (c *Config) SetFileValues(filename string) error {
