@@ -3,8 +3,11 @@ package order
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
+	"route256/loms/internal/server/handler"
+	orderService "route256/loms/internal/service/order"
 	"runtime/debug"
 	"time"
 
@@ -13,6 +16,10 @@ import (
 
 type infoRequest struct {
 	OrderID model.OrderID `json:"orderID"`
+}
+
+func (i *infoRequest) valid() bool {
+	return i.OrderID != 0
 }
 
 type infoResponse struct {
@@ -34,7 +41,7 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if infoRequestStruct.OrderID == 0 {
+	if !infoRequestStruct.valid() {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -42,19 +49,18 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
 	defer cancel()
 
-	foundOrder, err := h.service.GetInfo(
-		ctx,
-		infoRequestStruct.OrderID,
-	)
+	foundOrder, err := h.service.GetInfo(ctx, infoRequestStruct.OrderID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		if errors.Is(err, orderService.ErrNotFound) {
+			handler.WriteResponseError(w, 0, err.Error())
+			return
+		}
+
+		handler.WriteInternalError(w, err)
 		return
 	}
 
-	response := infoResponse{
-		Status: foundOrder.Status,
-		User:   foundOrder.User,
-	}
+	response := infoResponse{Status: foundOrder.Status, User: foundOrder.User}
 
 	for _, rItem := range foundOrder.Items {
 		response.Items = append(response.Items, item{
@@ -63,7 +69,5 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	if err = json.NewEncoder(w).Encode(response); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
+	handler.WriteResponse(w, response)
 }

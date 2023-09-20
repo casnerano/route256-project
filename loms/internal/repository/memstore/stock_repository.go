@@ -30,23 +30,20 @@ func (rep *stockRepository) FindBySKU(_ context.Context, sku model.SKU) (*model.
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
-	stock, ok := rep.store[sku]
+	rep.setFixtureIfNotExist(sku)
 
-	if !ok {
-		stub := model.Stock{
-			Available: uint16(rand.Uint32() % 100),
-			Reserved:  0,
-		}
-		rep.store[sku] = &stub
-		return &stub, nil
+	if stock, ok := rep.store[sku]; ok {
+		return stock, nil
 	}
 
-	return stock, nil
+	return nil, repository.ErrNotFound
 }
 
 func (rep *stockRepository) AddReserve(_ context.Context, sku model.SKU, count uint16) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
+
+	rep.setFixtureIfNotExist(sku)
 
 	if stock, ok := rep.store[sku]; ok {
 		if stock.Available < count {
@@ -66,6 +63,8 @@ func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, coun
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
+	rep.setFixtureIfNotExist(sku)
+
 	if stock, ok := rep.store[sku]; ok {
 		if stock.Reserved < count {
 			return errors.New("small quantity of reserve")
@@ -84,6 +83,8 @@ func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count 
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
+	rep.setFixtureIfNotExist(sku)
+
 	if stock, ok := rep.store[sku]; ok {
 		if stock.Reserved < count {
 			return errors.New("small quantity of reserve")
@@ -95,4 +96,13 @@ func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count 
 	}
 
 	return repository.ErrNotFound
+}
+
+func (rep *stockRepository) setFixtureIfNotExist(sku model.SKU) {
+	if _, ok := rep.store[sku]; !ok {
+		rep.store[sku] = &model.Stock{
+			Available: uint16(rand.Uint32() % 100),
+			Reserved:  0,
+		}
+	}
 }

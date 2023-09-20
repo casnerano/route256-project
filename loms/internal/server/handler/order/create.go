@@ -3,8 +3,11 @@ package order
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
+	"route256/loms/internal/server/handler"
+	orderService "route256/loms/internal/service/order"
 	"runtime/debug"
 	"time"
 
@@ -14,6 +17,10 @@ import (
 type createRequest struct {
 	User  model.UserID `json:"user"`
 	Items []item       `json:"items"`
+}
+
+func (c *createRequest) valid() bool {
+	return c.User != 0 && len(c.Items) != 0
 }
 
 type createResponse struct {
@@ -33,7 +40,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if createRequestStruct.User == 0 || len(createRequestStruct.Items) == 0 {
+	if !createRequestStruct.valid() {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -51,11 +58,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	createdOrder, err := h.service.Create(ctx, createRequestStruct.User, orderItems)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		if errors.Is(err, orderService.ErrAddReserve) {
+			handler.WriteResponseError(w, 0, err.Error())
+			return
+		}
+
+		handler.WriteInternalError(w, err)
 		return
 	}
 
-	if err = json.NewEncoder(w).Encode(createResponse{OrderID: createdOrder.ID}); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
+	handler.WriteResponse(w, createResponse{OrderID: createdOrder.ID})
 }

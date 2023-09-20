@@ -3,8 +3,11 @@ package order
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
+	"route256/loms/internal/server/handler"
+	orderService "route256/loms/internal/service/order"
 	"runtime/debug"
 	"time"
 
@@ -13,6 +16,10 @@ import (
 
 type cancelRequest struct {
 	OrderID model.OrderID `json:"orderID"`
+}
+
+func (c *cancelRequest) valid() bool {
+	return c.OrderID != 0
 }
 
 type cancelResponse struct{}
@@ -30,7 +37,7 @@ func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cancelRequestStruct.OrderID == 0 {
+	if !cancelRequestStruct.valid() {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -40,13 +47,17 @@ func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.Cancel(ctx, cancelRequestStruct.OrderID)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		if errors.Is(err, orderService.ErrNotFound) ||
+			errors.Is(err, orderService.ErrCancelPaidOrder) ||
+			errors.Is(err, orderService.ErrCancelReserve) {
+
+			handler.WriteResponseError(w, 0, err.Error())
+			return
+		}
+
+		handler.WriteInternalError(w, err)
 		return
 	}
 
-	response := cancelResponse{}
-
-	if err = json.NewEncoder(w).Encode(response); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
+	handler.WriteResponse(w, cancelResponse{})
 }

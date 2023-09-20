@@ -12,6 +12,7 @@ var (
 	ErrCancelPaidOrder = errors.New("failed cancel paid order")
 	ErrShipReserve     = errors.New("failed ship reserve")
 	ErrCancelReserve   = errors.New("failed cancel reserve")
+	ErrAddReserve      = errors.New("failed add reserve")
 )
 
 type order struct {
@@ -24,7 +25,22 @@ func New(repOrder repository.Order, repStock repository.Stock) *order {
 }
 
 func (o *order) Create(ctx context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error) {
-	return o.repOrder.Add(ctx, userID, items)
+	for _, item := range items {
+		if err := o.repStock.AddReserve(ctx, item.SKU, item.Count); err != nil {
+			return nil, ErrAddReserve
+		}
+	}
+
+	createdOrder, err := o.repOrder.Add(ctx, userID, items)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, ErrNotFound
+		}
+
+		return nil, err
+	}
+
+	return createdOrder, nil
 }
 
 func (o *order) GetInfo(ctx context.Context, orderID model.OrderID) (*model.Order, error) {
@@ -33,8 +49,10 @@ func (o *order) GetInfo(ctx context.Context, orderID model.OrderID) (*model.Orde
 		if errors.Is(err, repository.ErrNotFound) {
 			return nil, ErrNotFound
 		}
+
 		return nil, err
 	}
+
 	return foundOrder, nil
 }
 
@@ -44,6 +62,7 @@ func (o *order) Payment(ctx context.Context, orderID model.OrderID) error {
 		if errors.Is(err, repository.ErrNotFound) {
 			return ErrNotFound
 		}
+
 		return err
 	}
 
@@ -62,6 +81,7 @@ func (o *order) Cancel(ctx context.Context, orderID model.OrderID) error {
 		if errors.Is(err, repository.ErrNotFound) {
 			return ErrNotFound
 		}
+
 		return err
 	}
 

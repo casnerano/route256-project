@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"route256/loms/internal/server/handler"
 	orderService "route256/loms/internal/service/order"
 	"runtime/debug"
 	"time"
@@ -15,6 +16,10 @@ import (
 
 type payRequest struct {
 	OrderID model.OrderID `json:"orderID"`
+}
+
+func (p *payRequest) valid() bool {
+	return p.OrderID != 0
 }
 
 type payResponse struct{}
@@ -32,7 +37,7 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if payRequestStruct.OrderID == 0 {
+	if !payRequestStruct.valid() {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -43,16 +48,13 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	err := h.service.Payment(ctx, payRequestStruct.OrderID)
 	if err != nil {
 		if errors.Is(err, orderService.ErrNotFound) || errors.Is(err, orderService.ErrShipReserve) {
-			// ... error response
+			handler.WriteResponseError(w, 0, err.Error())
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
+
+		handler.WriteInternalError(w, err)
 		return
 	}
 
-	response := payResponse{}
-
-	if err = json.NewEncoder(w).Encode(response); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-	}
+	handler.WriteResponse(w, payResponse{})
 }
