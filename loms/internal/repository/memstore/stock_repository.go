@@ -34,7 +34,7 @@ func (rep *stockRepository) FindBySKU(_ context.Context, sku model.SKU) (*model.
 
 	if !ok {
 		stub := model.Stock{
-			Available: rand.Uint64() % 100,
+			Available: uint16(rand.Uint32() % 100),
 			Reserved:  0,
 		}
 		rep.store[sku] = &stub
@@ -44,7 +44,7 @@ func (rep *stockRepository) FindBySKU(_ context.Context, sku model.SKU) (*model.
 	return stock, nil
 }
 
-func (rep *stockRepository) AddReserve(_ context.Context, sku model.SKU, count uint64) error {
+func (rep *stockRepository) AddReserve(_ context.Context, sku model.SKU, count uint16) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -62,7 +62,7 @@ func (rep *stockRepository) AddReserve(_ context.Context, sku model.SKU, count u
 	return repository.ErrNotFound
 }
 
-func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, count uint64) error {
+func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, count uint16) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -80,7 +80,7 @@ func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, coun
 	return repository.ErrNotFound
 }
 
-func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count uint64) error {
+func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count uint16) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 

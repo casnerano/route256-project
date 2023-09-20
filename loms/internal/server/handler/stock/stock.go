@@ -11,7 +11,7 @@ import (
 )
 
 type Available interface {
-	GetAvailable(ctx context.Context, sku model.SKU) (uint64, error)
+	GetAvailable(ctx context.Context, sku model.SKU) (uint16, error)
 }
 
 type stockInfoRequest struct {
@@ -19,7 +19,7 @@ type stockInfoRequest struct {
 }
 
 type stockInfoResponse struct {
-	Count uint64 `json:"count"`
+	Count uint16 `json:"count"`
 }
 
 type Handler struct {

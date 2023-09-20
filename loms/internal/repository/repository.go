@@ -17,7 +17,7 @@ type Order interface {
 
 type Stock interface {
 	FindBySKU(ctx context.Context, sku model.SKU) (*model.Stock, error)
-	AddReserve(ctx context.Context, sku model.SKU, count uint64) error
-	CancelReserve(ctx context.Context, sku model.SKU, count uint64) error
-	ShipReserve(ctx context.Context, sku model.SKU, count uint64) error
+	AddReserve(ctx context.Context, sku model.SKU, count uint16) error
+	CancelReserve(ctx context.Context, sku model.SKU, count uint16) error
+	ShipReserve(ctx context.Context, sku model.SKU, count uint16) error
 }

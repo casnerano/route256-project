@@ -3,8 +3,10 @@ package order
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
+	orderService "route256/loms/internal/service/order"
 	"runtime/debug"
 	"time"
 
@@ -40,6 +42,10 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.Payment(ctx, payRequestStruct.OrderID)
 	if err != nil {
+		if errors.Is(err, orderService.ErrNotFound) || errors.Is(err, orderService.ErrShipReserve) {
+			// ... error response
+			return
+		}
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
