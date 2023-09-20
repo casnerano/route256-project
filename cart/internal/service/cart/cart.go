@@ -11,7 +11,8 @@ import (
 )
 
 var ErrItemNotFound = errors.New("item not found")
-var ErrPIMProductNotFound = errors.New("PIM product not found")
+var ErrPIMProductNotFound = errors.New("PIM: product not found")
+var ErrPIMLowAvailability = errors.New("PIM: low availability in stock")
 
 type PIMClient interface {
 	GetProductInfo(ctx context.Context, sku model.SKU) (*model.ProductInfo, error)
@@ -50,7 +51,7 @@ func (c *cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, coun
 	}
 
 	if uint64(count) > available {
-		return errors.New("low availability in stock")
+		return ErrPIMLowAvailability
 	}
 
 	cartItem := model.CartItem{

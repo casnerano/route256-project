@@ -51,8 +51,8 @@ func (h *Handler) Add(w http.ResponseWriter, r *http.Request) {
 		itemAddRequestStruct.SKU,
 		itemAddRequestStruct.Count,
 	); err != nil {
-		if errors.Is(err, cart.ErrPIMProductNotFound) {
-			w.WriteHeader(http.StatusNoContent)
+		if errors.Is(err, cart.ErrPIMProductNotFound) || errors.Is(err, cart.ErrPIMLowAvailability) {
+			w.WriteHeader(http.StatusConflict)
 			return
 		}
 
