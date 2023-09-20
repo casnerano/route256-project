@@ -2,10 +2,11 @@ package memstore
 
 import (
 	"context"
-	"route256/loms/internal/model"
-	"route256/loms/internal/repository"
 	"sync"
 	"time"
+
+	"route256/loms/internal/model"
+	"route256/loms/internal/repository"
 )
 
 type orderStorage = map[model.OrderID]*model.Order
@@ -18,8 +19,9 @@ type orderRepository struct {
 
 func NewOrderRepository() repository.Order {
 	return &orderRepository{
-		mu:    &sync.RWMutex{},
-		store: make(orderStorage),
+		mu:      &sync.RWMutex{},
+		store:   make(orderStorage),
+		counter: 1000,
 	}
 }
 
@@ -38,7 +40,7 @@ func (rep *orderRepository) Add(ctx context.Context, userID model.UserID, items 
 	}
 
 	rep.store[rep.counter] = &order
-	rep.counter++
+	rep.counter += 100
 
 	return &order, nil
 }
