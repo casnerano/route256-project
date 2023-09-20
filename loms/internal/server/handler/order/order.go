@@ -11,7 +11,7 @@ type item struct {
 	Count uint16    `json:"count"`
 }
 
-type OrderService interface {
+type Service interface {
 	Create(ctx context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error)
 	GetInfo(ctx context.Context, orderID model.OrderID) (*model.Order, error)
 	Payment(ctx context.Context, orderID model.OrderID) error
@@ -19,9 +19,9 @@ type OrderService interface {
 }
 
 type Handler struct {
-	orderService OrderService
+	service Service
 }
 
-func NewHandler(orderService OrderService) *Handler {
-	return &Handler{orderService: orderService}
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
 }
