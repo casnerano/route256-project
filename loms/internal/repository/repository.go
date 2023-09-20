@@ -7,7 +7,7 @@ import (
 	"route256/loms/internal/model"
 )
 
-var ErrNotFound = errors.New("not row found")
+var ErrNotFound = errors.New("not found")
 
 type Order interface {
 	Add(ctx context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error)
