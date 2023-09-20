@@ -53,7 +53,7 @@ func (rep *orderRepository) FindByID(_ context.Context, orderID model.OrderID) (
 		return order, nil
 	}
 
-	return nil, repository.ErrRowNotFound
+	return nil, repository.ErrNotFound
 }
 
 func (rep *orderRepository) ChangeStatus(ctx context.Context, orderID model.OrderID, status model.OrderStatus) error {
@@ -65,5 +65,5 @@ func (rep *orderRepository) ChangeStatus(ctx context.Context, orderID model.Orde
 		return nil
 	}
 
-	return repository.ErrRowNotFound
+	return repository.ErrNotFound
 }

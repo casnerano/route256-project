@@ -59,7 +59,7 @@ func (rep *stockRepository) AddReserve(_ context.Context, sku model.SKU, count u
 		return nil
 	}
 
-	return repository.ErrRowNotFound
+	return repository.ErrNotFound
 }
 
 func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, count uint64) error {
@@ -77,7 +77,7 @@ func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, coun
 		return nil
 	}
 
-	return repository.ErrRowNotFound
+	return repository.ErrNotFound
 }
 
 func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count uint64) error {
@@ -94,5 +94,5 @@ func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count 
 		return nil
 	}
 
-	return repository.ErrRowNotFound
+	return repository.ErrNotFound
 }
