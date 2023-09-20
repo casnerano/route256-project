@@ -38,7 +38,7 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
 	defer cancel()
 
-	err := h.orderService.Payment(ctx, payRequestStruct.OrderID)
+	err := h.service.Payment(ctx, payRequestStruct.OrderID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

@@ -38,7 +38,7 @@ func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
 	defer cancel()
 
-	err := h.orderService.Cancel(ctx, cancelRequestStruct.OrderID)
+	err := h.service.Cancel(ctx, cancelRequestStruct.OrderID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

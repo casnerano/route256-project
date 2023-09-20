@@ -42,7 +42,7 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
 	defer cancel()
 
-	foundOrder, err := h.orderService.GetInfo(
+	foundOrder, err := h.service.GetInfo(
 		ctx,
 		infoRequestStruct.OrderID,
 	)

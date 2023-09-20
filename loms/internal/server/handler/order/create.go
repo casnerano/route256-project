@@ -49,7 +49,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	createdOrder, err := h.orderService.Create(ctx, createRequestStruct.User, orderItems)
+	createdOrder, err := h.service.Create(ctx, createRequestStruct.User, orderItems)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
