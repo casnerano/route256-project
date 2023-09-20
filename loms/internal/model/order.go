@@ -7,11 +7,11 @@ type OrderID = int64
 type OrderStatus string
 
 const (
-	OrderStatusNew          OrderStatus = "NEW"
-	OrderStatusAwaitPayment OrderStatus = "AWAIT PAYMENT"
-	OrderStatusFailed       OrderStatus = "FAILED"
-	OrderStatusPayed        OrderStatus = "PAYED"
-	OrderStatusCanceled     OrderStatus = "CANCELED"
+	OrderStatusNew          OrderStatus = "new"
+	OrderStatusAwaitPayment OrderStatus = "await payment"
+	OrderStatusFailed       OrderStatus = "failed"
+	OrderStatusPayed        OrderStatus = "payed"
+	OrderStatusCanceled     OrderStatus = "canceled"
 )
 
 type OrderItem struct {

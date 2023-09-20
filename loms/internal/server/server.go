@@ -3,11 +3,14 @@ package server
 import (
 	"context"
 	"net/http"
+	"time"
+
 	"route256/loms/internal/config"
 	"route256/loms/internal/repository/memstore"
+	hOrder "route256/loms/internal/server/handler/order"
 	hStock "route256/loms/internal/server/handler/stock"
+	sOrder "route256/loms/internal/service/order"
 	sStock "route256/loms/internal/service/stock"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,6 +18,7 @@ import (
 
 type handler struct {
 	stock *hStock.Handler
+	order *hOrder.Handler
 }
 
 type server struct {
@@ -57,12 +61,14 @@ func (s *server) Shutdown() error {
 
 func (s *server) getHandler() *handler {
 	repStock := memstore.NewStockRepository()
-	//repOrder := memstore.NewOrderRepository()
+	repOrder := memstore.NewOrderRepository()
 
 	ss := sStock.New(repStock)
+	so := sOrder.New(repOrder, repStock)
 
 	return &handler{
 		stock: hStock.NewHandler(ss),
+		order: hOrder.NewHandler(so),
 	}
 }
 
@@ -76,6 +82,11 @@ func (s *server) init() {
 	)
 
 	router.Post("/api/stock/info", h.stock.Info)
+
+	router.Post("/api/order/create", h.order.Create)
+	router.Post("/api/order/info", h.order.Info)
+	router.Post("/api/order/pay", h.order.Pay)
+	router.Post("/api/order/cancel", h.order.Cancel)
 
 	s.httpServer.Handler = router
 }

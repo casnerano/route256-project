@@ -2,11 +2,14 @@ package order
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
 )
+
+var ErrCancelPaidOrder = errors.New("failed cancel paid order")
 
 type order struct {
 	repOrder repository.Order
@@ -49,6 +52,10 @@ func (o *order) Cancel(ctx context.Context, orderID model.OrderID) error {
 	if err != nil {
 		return err
 
+	}
+
+	if fOrder.Status == model.OrderStatusPayed {
+		return ErrCancelPaidOrder
 	}
 
 	for _, oItem := range fOrder.Items {
