@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"route256/cart/internal/model"
 	"route256/cart/internal/repository"
+	"route256/cart/internal/service/client/pim"
 )
 
-var ErrNotFound = errors.New("rows not found")
+var ErrItemNotFound = errors.New("item not found")
+var ErrPIMProductNotFound = errors.New("PIM product not found")
 
 type PIMClient interface {
 	GetProductInfo(ctx context.Context, sku model.SKU) (*model.ProductInfo, error)
@@ -35,6 +38,9 @@ func New(rep repository.Cart, pim PIMClient, loms LOMSClient) *cart {
 func (c *cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint16) error {
 	_, err := c.pim.GetProductInfo(ctx, sku)
 	if err != nil {
+		if errors.Is(err, pim.ErrProductNotFound) {
+			return ErrPIMProductNotFound
+		}
 		return err
 	}
 
@@ -59,7 +65,7 @@ func (c *cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) e
 	err := c.rep.DeleteBySKU(ctx, userID, sku)
 	if err != nil {
 		if err == repository.ErrRowNotFound {
-			return ErrNotFound
+			return ErrItemNotFound
 		}
 		return err
 	}
@@ -73,8 +79,8 @@ func (c *cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) e
 func (c *cart) List(ctx context.Context, userID model.UserID) ([]*model.CartItemDetail, error) {
 	list, err := c.rep.FindByUser(ctx, userID)
 	if err != nil {
-		if err == repository.ErrRowNotFound {
-			return nil, ErrNotFound
+		if errors.Is(err, repository.ErrRowNotFound) {
+			return nil, ErrItemNotFound
 		}
 		return nil, err
 	}
@@ -100,8 +106,8 @@ func (c *cart) List(ctx context.Context, userID model.UserID) ([]*model.CartItem
 func (c *cart) Clear(ctx context.Context, userID model.UserID) error {
 	err := c.rep.DeleteByUser(ctx, userID)
 	if err != nil {
-		if err == repository.ErrRowNotFound {
-			return ErrNotFound
+		if errors.Is(err, repository.ErrRowNotFound) {
+			return ErrItemNotFound
 		}
 		return err
 	}

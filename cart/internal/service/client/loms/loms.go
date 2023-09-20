@@ -8,8 +8,9 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"route256/cart/internal/model"
 	"runtime/debug"
+
+	"route256/cart/internal/model"
 )
 
 type client struct {

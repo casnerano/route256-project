@@ -3,12 +3,14 @@ package cart
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
-	"route256/cart/internal/model"
-	"route256/cart/internal/service/cart"
 	"runtime/debug"
 	"time"
+
+	"route256/cart/internal/model"
+	"route256/cart/internal/service/cart"
 )
 
 type itemAddRequest struct {
@@ -49,6 +51,11 @@ func (h *Handler) Add(w http.ResponseWriter, r *http.Request) {
 		itemAddRequestStruct.SKU,
 		itemAddRequestStruct.Count,
 	); err != nil {
+		if errors.Is(err, cart.ErrPIMProductNotFound) {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -78,7 +85,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	if err := h.modifier.Delete(ctx, itemDeleteRequestStruct.User, itemDeleteRequestStruct.SKU); err != nil {
-		if err == cart.ErrNotFound {
+		if errors.Is(err, cart.ErrItemNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

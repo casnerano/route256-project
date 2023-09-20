@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"route256/cart/internal/service/cart"
 	"runtime/debug"
 	"time"
+
+	"route256/cart/internal/service/cart"
 
 	"route256/cart/internal/model"
 )
@@ -33,7 +34,7 @@ func (h *Handler) Clear(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	if err := h.modifier.Clear(ctx, clearRequestStruct.User); err != nil {
-		if err == cart.ErrNotFound {
+		if err == cart.ErrItemNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

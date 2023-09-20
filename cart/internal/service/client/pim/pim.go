@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
-	"route256/cart/internal/model"
 	"runtime/debug"
+
+	"route256/cart/internal/model"
 )
+
+var ErrProductNotFound = errors.New("product not found")
 
 type client struct {
 	baseURL string
@@ -59,6 +63,10 @@ func (c *client) GetProductInfo(ctx context.Context, sku model.SKU) (*model.Prod
 	}()
 
 	if response.StatusCode != http.StatusOK {
+		if response.StatusCode == http.StatusNotFound {
+			return nil, ErrProductNotFound
+		}
+
 		errResponse := GetProductErrorResponse{}
 		if err = json.NewDecoder(response.Body).Decode(&errResponse); err != nil {
 			return nil, err

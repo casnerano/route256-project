@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"route256/cart/internal/model"
-	"route256/cart/internal/service/cart"
 	"runtime/debug"
 	"time"
+
+	"route256/cart/internal/model"
+	"route256/cart/internal/service/cart"
 )
 
 type listRequest struct {
@@ -45,7 +46,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	list, err := h.modifier.List(ctx, listRequestStruct.User)
 	if err != nil {
-		if err == cart.ErrNotFound {
+		if err == cart.ErrItemNotFound {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
