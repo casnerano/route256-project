@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"sync"
+
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
-	"sync"
 )
 
 type stockStorage = map[model.SKU]*model.Stock
@@ -71,6 +72,23 @@ func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, coun
 		}
 
 		rep.store[sku].Available += count
+		rep.store[sku].Reserved -= count
+
+		return nil
+	}
+
+	return repository.ErrRowNotFound
+}
+
+func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count uint64) error {
+	rep.mu.Lock()
+	defer rep.mu.Unlock()
+
+	if stock, ok := rep.store[sku]; ok {
+		if stock.Reserved < count {
+			return errors.New("small quantity of reserve")
+		}
+
 		rep.store[sku].Reserved -= count
 
 		return nil

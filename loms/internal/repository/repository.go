@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+
 	"route256/loms/internal/model"
 )
 
@@ -18,4 +19,5 @@ type Stock interface {
 	FindBySKU(ctx context.Context, sku model.SKU) (*model.Stock, error)
 	AddReserve(ctx context.Context, sku model.SKU, count uint64) error
 	CancelReserve(ctx context.Context, sku model.SKU, count uint64) error
+	ShipReserve(ctx context.Context, sku model.SKU, count uint64) error
 }

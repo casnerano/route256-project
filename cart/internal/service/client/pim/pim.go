@@ -24,6 +24,7 @@ func NewClient(baseURL string) *client {
 	return &client{baseURL: baseURL}
 }
 
+// TODO: token from context
 func (c *client) GetProductInfo(ctx context.Context, sku model.SKU) (*model.ProductInfo, error) {
 	path, err := url.JoinPath(c.baseURL, "/get_product")
 	if err != nil {

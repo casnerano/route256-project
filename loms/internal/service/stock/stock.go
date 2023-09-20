@@ -2,6 +2,7 @@ package stock
 
 import (
 	"context"
+
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
 )
@@ -28,4 +29,8 @@ func (s *stock) AddReserve(ctx context.Context, sku model.SKU, count uint64) err
 
 func (s *stock) CancelReserve(ctx context.Context, sku model.SKU, count uint64) error {
 	return s.rep.CancelReserve(ctx, sku, count)
+}
+
+func (s *stock) ShipReserve(ctx context.Context, sku model.SKU, count uint64) error {
+	return s.rep.ShipReserve(ctx, sku, count)
 }
