@@ -41,7 +41,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
 	defer cancel()
 
-	orderItems := make([]*model.OrderItem, len(createRequestStruct.Items))
+	orderItems := make([]*model.OrderItem, 0, len(createRequestStruct.Items))
 	for _, rItem := range createRequestStruct.Items {
 		orderItems = append(orderItems, &model.OrderItem{
 			SKU:   rItem.SKU,
@@ -49,12 +49,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	createdOrder, err := h.orderService.Create(
-		ctx,
-		createRequestStruct.User,
-		orderItems,
-	)
-
+	createdOrder, err := h.orderService.Create(ctx, createRequestStruct.User, orderItems)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
