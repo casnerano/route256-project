@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"route256/cart/internal/model"
+	"route256/cart/internal/server/handler"
 	"route256/cart/internal/service/cart"
 )
 
@@ -19,9 +20,17 @@ type itemAddRequest struct {
 	Count uint16       `json:"count"`
 }
 
+func (i *itemAddRequest) valid() bool {
+	return i.User != 0 && i.SKU != 0 && i.Count != 0
+}
+
 type itemDeleteRequest struct {
 	User model.UserID `json:"user"`
 	SKU  model.SKU    `json:"sku"`
+}
+
+func (i *itemDeleteRequest) valid() bool {
+	return i.User != 0 && i.SKU != 0
 }
 
 func (h *Handler) Add(w http.ResponseWriter, r *http.Request) {
@@ -37,7 +46,7 @@ func (h *Handler) Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if itemAddRequestStruct.User == 0 || itemAddRequestStruct.SKU == 0 || itemAddRequestStruct.Count == 0 {
+	if !itemAddRequestStruct.valid() {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -45,18 +54,18 @@ func (h *Handler) Add(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
 	defer cancel()
 
-	if err := h.modifier.Add(
+	if err := h.service.Add(
 		ctx,
 		itemAddRequestStruct.User,
 		itemAddRequestStruct.SKU,
 		itemAddRequestStruct.Count,
 	); err != nil {
 		if errors.Is(err, cart.ErrPIMProductNotFound) || errors.Is(err, cart.ErrPIMLowAvailability) {
-			w.WriteHeader(http.StatusConflict)
+			handler.WriteResponseError(w, 0, err.Error())
 			return
 		}
 
-		w.WriteHeader(http.StatusInternalServerError)
+		handler.WriteInternalError(w, err)
 		return
 	}
 
@@ -76,7 +85,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if itemDeleteRequestStruct.User == 0 || itemDeleteRequestStruct.SKU == 0 {
+	if !itemDeleteRequestStruct.valid() {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -84,12 +93,13 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
 	defer cancel()
 
-	if err := h.modifier.Delete(ctx, itemDeleteRequestStruct.User, itemDeleteRequestStruct.SKU); err != nil {
-		if errors.Is(err, cart.ErrItemNotFound) {
+	if err := h.service.Delete(ctx, itemDeleteRequestStruct.User, itemDeleteRequestStruct.SKU); err != nil {
+		if errors.Is(err, cart.ErrNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
+
+		handler.WriteInternalError(w, err)
 		return
 	}
 

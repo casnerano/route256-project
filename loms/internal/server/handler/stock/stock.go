@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type Available interface {
+type Service interface {
 	GetAvailable(ctx context.Context, sku model.SKU) (uint16, error)
 }
 
@@ -23,11 +23,11 @@ type stockInfoResponse struct {
 }
 
 type Handler struct {
-	available Available
+	service Service
 }
 
-func NewHandler(available Available) *Handler {
-	return &Handler{available: available}
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
 }
 
 func (h *Handler) Info(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,7 @@ func (h *Handler) Info(w http.ResponseWriter, r *http.Request) {
 	var err error
 	response := stockInfoResponse{}
 
-	response.Count, err = h.available.GetAvailable(ctx, stockInfoRequestStruct.SKU)
+	response.Count, err = h.service.GetAvailable(ctx, stockInfoRequestStruct.SKU)
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

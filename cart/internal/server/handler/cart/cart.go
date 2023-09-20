@@ -5,7 +5,7 @@ import (
 	"route256/cart/internal/model"
 )
 
-type Modifier interface {
+type Service interface {
 	Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint16) error
 	Delete(ctx context.Context, userID model.UserID, sku model.SKU) error
 	List(ctx context.Context, userID model.UserID) ([]*model.CartItemDetail, error)
@@ -13,9 +13,9 @@ type Modifier interface {
 }
 
 type Handler struct {
-	modifier Modifier
+	service Service
 }
 
-func NewHandler(modifier Modifier) *Handler {
-	return &Handler{modifier: modifier}
+func NewHandler(service Service) *Handler {
+	return &Handler{service: service}
 }

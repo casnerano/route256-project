@@ -6,7 +6,7 @@ import (
 	"route256/cart/internal/model"
 )
 
-var ErrRowNotFound = errors.New("not row found")
+var ErrNotFound = errors.New("not row found")
 
 type Cart interface {
 	Add(ctx context.Context, userID model.UserID, item *model.CartItem) error

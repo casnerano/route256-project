@@ -3,8 +3,10 @@ package cart
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
+	"route256/cart/internal/server/handler"
 	"runtime/debug"
 	"time"
 
@@ -14,6 +16,10 @@ import (
 
 type listRequest struct {
 	User model.UserID `json:"user"`
+}
+
+func (l *listRequest) valid() bool {
+	return l.User != 0
 }
 
 type listItemResponse struct {
@@ -41,16 +47,22 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !listRequestStruct.valid() {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Second)
 	defer cancel()
 
-	list, err := h.modifier.List(ctx, listRequestStruct.User)
+	list, err := h.service.List(ctx, listRequestStruct.User)
 	if err != nil {
-		if err == cart.ErrItemNotFound {
+		if errors.Is(err, cart.ErrNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		w.WriteHeader(http.StatusInternalServerError)
+
+		handler.WriteInternalError(w, err)
 		return
 	}
 
@@ -62,12 +74,10 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 			Name:  list[key].Name,
 			Price: list[key].Price,
 		}
+
 		response.Items = append(response.Items, &item)
 		response.TotalPrice += item.Price * uint32(item.Count)
 	}
 
-	if err = json.NewEncoder(w).Encode(response); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	handler.WriteResponse(w, response)
 }
