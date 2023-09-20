@@ -10,6 +10,7 @@ type Service interface {
 	Delete(ctx context.Context, userID model.UserID, sku model.SKU) error
 	List(ctx context.Context, userID model.UserID) ([]*model.CartItemDetail, error)
 	Clear(ctx context.Context, userID model.UserID) error
+	Checkout(ctx context.Context, userID model.UserID) (model.OrderID, error)
 }
 
 type Handler struct {

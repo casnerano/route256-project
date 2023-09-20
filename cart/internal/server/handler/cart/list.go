@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"route256/cart/internal/model"
-	"route256/cart/internal/service/cart"
+	cartService "route256/cart/internal/service/cart"
 )
 
 type listRequest struct {
@@ -57,8 +57,8 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	list, err := h.service.List(ctx, listRequestStruct.User)
 	if err != nil {
-		if errors.Is(err, cart.ErrNotFound) {
-			w.WriteHeader(http.StatusNotFound)
+		if errors.Is(err, cartService.ErrNotFound) {
+			handler.WriteResponse(w, listResponse{})
 			return
 		}
 
@@ -67,6 +67,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var response listResponse
+
 	for key := range list {
 		item := listItemResponse{
 			SKU:   list[key].SKU,

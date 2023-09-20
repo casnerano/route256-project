@@ -11,7 +11,7 @@ import (
 
 	"route256/cart/internal/model"
 	"route256/cart/internal/server/handler"
-	"route256/cart/internal/service/cart"
+	cartService "route256/cart/internal/service/cart"
 )
 
 type itemAddRequest struct {
@@ -60,7 +60,7 @@ func (h *Handler) Add(w http.ResponseWriter, r *http.Request) {
 		itemAddRequestStruct.SKU,
 		itemAddRequestStruct.Count,
 	); err != nil {
-		if errors.Is(err, cart.ErrPIMProductNotFound) || errors.Is(err, cart.ErrPIMLowAvailability) {
+		if errors.Is(err, cartService.ErrPIMProductNotFound) || errors.Is(err, cartService.ErrPIMLowAvailability) {
 			handler.WriteResponseError(w, 0, err.Error())
 			return
 		}
@@ -94,7 +94,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	if err := h.service.Delete(ctx, itemDeleteRequestStruct.User, itemDeleteRequestStruct.SKU); err != nil {
-		if errors.Is(err, cart.ErrNotFound) {
+		if errors.Is(err, cartService.ErrNotFound) {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}

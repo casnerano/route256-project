@@ -9,3 +9,17 @@ type GetStockInfoRequest struct {
 type GetStockInfoResponse struct {
 	Count uint64 `json:"count"`
 }
+
+type CreateOrderItem struct {
+	SKU   model.SKU `json:"sku"`
+	Count uint16    `json:"count"`
+}
+
+type CreateOrderRequest struct {
+	User  model.UserID       `json:"user"`
+	Items []*CreateOrderItem `json:"items"`
+}
+
+type CreateOrderResponse struct {
+	OrderID model.OrderID `json:"orderID"`
+}
