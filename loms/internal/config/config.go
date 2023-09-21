@@ -39,7 +39,7 @@ func New() (*Config, error) {
 }
 
 func (c *Config) SetDefaultValues() {
-	c.Server.Addr = "127.0.0.1:8080"
+	c.Server.Addr = ":8080"
 	c.Order.CancelUnpaidTimeout = 600
 }
 
