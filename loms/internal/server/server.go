@@ -5,30 +5,37 @@ import (
 	"net/http"
 	"time"
 
-	"route256/loms/internal/config"
-	"route256/loms/internal/repository/memstore"
-	hOrder "route256/loms/internal/server/handler/order"
-	hStock "route256/loms/internal/server/handler/stock"
-	sOrder "route256/loms/internal/service/order"
-	sStock "route256/loms/internal/service/stock"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"route256/loms/internal/config"
+	handlerOrder "route256/loms/internal/server/handler/order"
+	handlerStock "route256/loms/internal/server/handler/stock"
+	serviceOrder "route256/loms/internal/service/order"
+	serviceStock "route256/loms/internal/service/stock"
 )
 
 type handler struct {
-	stock *hStock.Handler
-	order *hOrder.Handler
+	order *handlerOrder.Handler
+	stock *handlerStock.Handler
 }
 
-type server struct {
+type Server struct {
 	config     config.Server
+	handler    *handler
 	httpServer *http.Server
 }
 
-func New(c config.Server) (*server, error) {
-	s := &server{
+func New(
+	c config.Server,
+	serviceOrder *serviceOrder.Order,
+	serviceStock *serviceStock.Stock,
+) (*Server, error) {
+	s := &Server{
 		config: c,
+		handler: &handler{
+			order: handlerOrder.NewHandler(serviceOrder),
+			stock: handlerStock.NewHandler(serviceStock),
+		},
 		httpServer: &http.Server{
 			Addr: c.Addr,
 		},
@@ -39,11 +46,11 @@ func New(c config.Server) (*server, error) {
 	return s, nil
 }
 
-func (s *server) Run() error {
+func (s *Server) Run() error {
 	return s.httpServer.ListenAndServe()
 }
 
-func (s *server) Shutdown() error {
+func (s *Server) Shutdown() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -54,34 +61,19 @@ func (s *server) Shutdown() error {
 	return nil
 }
 
-func (s *server) getHandler() *handler {
-	repStock := memstore.NewStockRepository()
-	repOrder := memstore.NewOrderRepository()
-
-	ss := sStock.New(repStock)
-	so := sOrder.New(repOrder, repStock)
-
-	return &handler{
-		stock: hStock.NewHandler(ss),
-		order: hOrder.NewHandler(so),
-	}
-}
-
-func (s *server) init() {
-	h := s.getHandler()
-
+func (s *Server) init() {
 	router := chi.NewRouter()
 	router.Use(
 		middleware.SetHeader("Content-Type", "application/json"),
 		middleware.Recoverer,
 	)
 
-	router.Post("/api/stock/info", h.stock.Info)
+	router.Post("/api/stock/info", s.handler.stock.Info)
 
-	router.Post("/api/order/create", h.order.Create)
-	router.Post("/api/order/info", h.order.Info)
-	router.Post("/api/order/pay", h.order.Pay)
-	router.Post("/api/order/cancel", h.order.Cancel)
+	router.Post("/api/order/create", s.handler.order.Create)
+	router.Post("/api/order/info", s.handler.order.Info)
+	router.Post("/api/order/pay", s.handler.order.Pay)
+	router.Post("/api/order/cancel", s.handler.order.Cancel)
 
 	s.httpServer.Handler = router
 }

@@ -74,7 +74,7 @@ func (rep *orderRepository) FindByUnpaidStatusWithDuration(_ context.Context, du
 
 	orders := make([]*model.Order, 0)
 	for _, order := range rep.store {
-		if order.Status == model.OrderStatusNew && order.CreatedAt.Add(duration).After(time.Now()) {
+		if order.Status == model.OrderStatusNew && order.CreatedAt.Add(duration).Before(time.Now()) {
 			orders = append(orders, order)
 		}
 	}

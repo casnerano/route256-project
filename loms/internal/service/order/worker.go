@@ -4,29 +4,23 @@ import (
 	"context"
 	"log"
 	"time"
-
-	"route256/loms/internal/repository/memstore"
 )
 
 type Canceler interface {
 	CancelUnpaidWithDuration(ctx context.Context, duration time.Duration) error
 }
 
-type cancelUnpaidOrderWorker struct {
+type CancelUnpaidWorker struct {
 	canceler Canceler
 	duration time.Duration
 }
 
-// TODO: dependency injection with Canceler
-func NewCancelUnpaidWorker(duration time.Duration) *cancelUnpaidOrderWorker {
-	repStock := memstore.NewStockRepository()
-	repOrder := memstore.NewOrderRepository()
-
-	return &cancelUnpaidOrderWorker{canceler: New(repOrder, repStock), duration: duration}
+func NewCancelUnpaidWorker(canceler Canceler, duration time.Duration) *CancelUnpaidWorker {
+	return &CancelUnpaidWorker{canceler: canceler, duration: duration}
 }
 
-func (w *cancelUnpaidOrderWorker) Run(ctx context.Context) error {
-	ticker := time.NewTicker(1 * time.Second)
+func (w *CancelUnpaidWorker) Run(ctx context.Context) error {
+	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
 	for {

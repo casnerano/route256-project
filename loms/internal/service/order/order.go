@@ -17,16 +17,16 @@ var (
 	ErrAddReserve      = errors.New("failed add reserve")
 )
 
-type order struct {
+type Order struct {
 	repOrder repository.Order
 	repStock repository.Stock
 }
 
-func New(repOrder repository.Order, repStock repository.Stock) *order {
-	return &order{repOrder: repOrder, repStock: repStock}
+func New(repOrder repository.Order, repStock repository.Stock) *Order {
+	return &Order{repOrder: repOrder, repStock: repStock}
 }
 
-func (o *order) Create(ctx context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error) {
+func (o *Order) Create(ctx context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error) {
 	for _, item := range items {
 		if err := o.repStock.AddReserve(ctx, item.SKU, item.Count); err != nil {
 			return nil, ErrAddReserve
@@ -45,7 +45,7 @@ func (o *order) Create(ctx context.Context, userID model.UserID, items []*model.
 	return createdOrder, nil
 }
 
-func (o *order) GetInfo(ctx context.Context, orderID model.OrderID) (*model.Order, error) {
+func (o *Order) GetInfo(ctx context.Context, orderID model.OrderID) (*model.Order, error) {
 	foundOrder, err := o.repOrder.FindByID(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -58,7 +58,7 @@ func (o *order) GetInfo(ctx context.Context, orderID model.OrderID) (*model.Orde
 	return foundOrder, nil
 }
 
-func (o *order) Payment(ctx context.Context, orderID model.OrderID) error {
+func (o *Order) Payment(ctx context.Context, orderID model.OrderID) error {
 	foundOrder, err := o.repOrder.FindByID(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -77,7 +77,7 @@ func (o *order) Payment(ctx context.Context, orderID model.OrderID) error {
 	return o.repOrder.ChangeStatus(ctx, orderID, model.OrderStatusPayed)
 }
 
-func (o *order) Cancel(ctx context.Context, orderID model.OrderID) error {
+func (o *Order) Cancel(ctx context.Context, orderID model.OrderID) error {
 	foundOrder, err := o.repOrder.FindByID(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -100,7 +100,7 @@ func (o *order) Cancel(ctx context.Context, orderID model.OrderID) error {
 	return o.repOrder.ChangeStatus(ctx, orderID, model.OrderStatusCanceled)
 }
 
-func (o *order) CancelUnpaidWithDuration(ctx context.Context, duration time.Duration) error {
+func (o *Order) CancelUnpaidWithDuration(ctx context.Context, duration time.Duration) error {
 	orders, err := o.repOrder.FindByUnpaidStatusWithDuration(ctx, duration)
 	if err != nil {
 		return err
