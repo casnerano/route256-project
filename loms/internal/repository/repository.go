@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"time"
 
 	"route256/loms/internal/model"
 )
@@ -13,6 +14,7 @@ type Order interface {
 	Add(ctx context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error)
 	FindByID(ctx context.Context, orderID model.OrderID) (*model.Order, error)
 	ChangeStatus(ctx context.Context, orderID model.OrderID, status model.OrderStatus) error
+	FindByUnpaidStatusWithDuration(ctx context.Context, duration time.Duration) ([]*model.Order, error)
 }
 
 type Stock interface {

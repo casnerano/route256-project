@@ -56,7 +56,7 @@ func (rep *orderRepository) FindByID(_ context.Context, orderID model.OrderID) (
 	return nil, repository.ErrNotFound
 }
 
-func (rep *orderRepository) ChangeStatus(ctx context.Context, orderID model.OrderID, status model.OrderStatus) error {
+func (rep *orderRepository) ChangeStatus(_ context.Context, orderID model.OrderID, status model.OrderStatus) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -66,4 +66,18 @@ func (rep *orderRepository) ChangeStatus(ctx context.Context, orderID model.Orde
 	}
 
 	return repository.ErrNotFound
+}
+
+func (rep *orderRepository) FindByUnpaidStatusWithDuration(_ context.Context, duration time.Duration) ([]*model.Order, error) {
+	rep.mu.RLock()
+	defer rep.mu.RUnlock()
+
+	orders := make([]*model.Order, 0)
+	for _, order := range rep.store {
+		if order.Status == model.OrderStatusNew && order.CreatedAt.Add(duration).After(time.Now()) {
+			orders = append(orders, order)
+		}
+	}
+
+	return orders, nil
 }

@@ -13,13 +13,17 @@ const defaultFilename = "./configs/config.yaml"
 
 var yamlFilename string
 
+type Server struct {
+	Addr string `yaml:"addr"`
+}
+
+type Order struct {
+	CancelUnpaidTimeout uint64 `yaml:"cancel_unpaid_timeout"`
+}
+
 type Config struct {
-	Server struct {
-		Addr string `yaml:"addr"`
-	} `yaml:"server"`
-	Order struct {
-		CancelUnpaidTimeout uint64 `yaml:"cancel_unpaid_timeout"`
-	} `yaml:"order"`
+	Server Server `yaml:"server"`
+	Order  Order  `yaml:"order"`
 }
 
 func New() (*Config, error) {

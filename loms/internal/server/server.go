@@ -22,20 +22,15 @@ type handler struct {
 }
 
 type server struct {
-	config     *config.Config
+	config     config.Server
 	httpServer *http.Server
 }
 
-func New() (*server, error) {
-	c, err := config.New()
-	if err != nil {
-		return nil, err
-	}
-
+func New(c config.Server) (*server, error) {
 	s := &server{
 		config: c,
 		httpServer: &http.Server{
-			Addr: c.Server.Addr,
+			Addr: c.Addr,
 		},
 	}
 

@@ -3,6 +3,8 @@ package order
 import (
 	"context"
 	"errors"
+	"time"
+
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
 )
@@ -96,4 +98,19 @@ func (o *order) Cancel(ctx context.Context, orderID model.OrderID) error {
 	}
 
 	return o.repOrder.ChangeStatus(ctx, orderID, model.OrderStatusCanceled)
+}
+
+func (o *order) CancelUnpaidWithDuration(ctx context.Context, duration time.Duration) error {
+	orders, err := o.repOrder.FindByUnpaidStatusWithDuration(ctx, duration)
+	if err != nil {
+		return err
+	}
+
+	for _, orderItem := range orders {
+		if err = o.Cancel(ctx, orderItem.ID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
