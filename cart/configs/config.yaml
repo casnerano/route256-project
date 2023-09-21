@@ -1,6 +1,6 @@
 server:
   addr: :8080
 LOMS:
-  addr: http://loms:8083
+  addr: http://loms:8080
 PIM:
   addr: http://route256.pavl.uk:8080
