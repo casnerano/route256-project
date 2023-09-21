@@ -6,10 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os/signal"
+	"route256/loms/internal"
 	"sync"
 	"syscall"
-
-	"route256/loms/internal"
 )
 
 func main() {

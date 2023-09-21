@@ -2,7 +2,6 @@ package stock
 
 import (
 	"context"
-
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
 )

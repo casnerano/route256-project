@@ -9,9 +9,8 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"runtime/debug"
-
 	"route256/cart/internal/model"
+	"runtime/debug"
 )
 
 var ErrProductNotFound = errors.New("product not found")

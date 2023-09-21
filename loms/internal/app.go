@@ -3,14 +3,13 @@ package internal
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"route256/loms/internal/config"
 	"route256/loms/internal/repository"
 	"route256/loms/internal/repository/memstore"
 	"route256/loms/internal/server"
 	"route256/loms/internal/service/order"
 	"route256/loms/internal/service/stock"
+	"time"
 )
 
 type worker interface {

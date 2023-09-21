@@ -6,13 +6,11 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"route256/cart/internal/model"
 	"route256/cart/internal/server/handler"
+	cartService "route256/cart/internal/service/cart"
 	"runtime/debug"
 	"time"
-
-	cartService "route256/cart/internal/service/cart"
-
-	"route256/cart/internal/model"
 )
 
 type clearRequest struct {

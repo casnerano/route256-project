@@ -3,9 +3,8 @@ package repository
 import (
 	"context"
 	"errors"
-	"time"
-
 	"route256/loms/internal/model"
+	"time"
 )
 
 var ErrNotFound = errors.New("not found")

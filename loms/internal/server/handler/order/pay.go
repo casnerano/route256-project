@@ -6,12 +6,11 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"route256/loms/internal/model"
 	"route256/loms/internal/server/handler"
 	orderService "route256/loms/internal/service/order"
 	"runtime/debug"
 	"time"
-
-	"route256/loms/internal/model"
 )
 
 type payRequest struct {

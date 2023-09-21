@@ -38,8 +38,8 @@ func New() (*Config, error) {
 }
 
 func (c *Config) SetDefaultValues() {
-	c.Server.Addr = "127.0.0.1:8081"
-	c.LOMS.Addr = "127.0.0.1:8082"
+	c.Server.Addr = "127.0.0.1:8080"
+	c.LOMS.Addr = "http://loms:8083"
 	c.PIM.Addr = "http://route256.pavl.uk:8080"
 }
 

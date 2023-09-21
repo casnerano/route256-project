@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 	"math/rand"
-	"sync"
-
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
+	"sync"
 )
 
 type stockStorage = map[model.SKU]*model.Stock

@@ -3,15 +3,15 @@ package server
 import (
 	"context"
 	"net/http"
-	"time"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"route256/loms/internal/config"
 	handlerOrder "route256/loms/internal/server/handler/order"
 	handlerStock "route256/loms/internal/server/handler/stock"
 	serviceOrder "route256/loms/internal/service/order"
 	serviceStock "route256/loms/internal/service/stock"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type handler struct {

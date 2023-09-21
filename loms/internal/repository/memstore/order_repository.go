@@ -2,11 +2,10 @@ package memstore
 
 import (
 	"context"
-	"sync"
-	"time"
-
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
+	"sync"
+	"time"
 )
 
 type orderStorage = map[model.OrderID]*model.Order
