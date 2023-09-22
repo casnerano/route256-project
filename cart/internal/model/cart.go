@@ -1,11 +1,11 @@
 package model
 
-type CartItem struct {
+type Item struct {
 	SKU   SKU
 	Count uint16
 }
 
-type CartItemDetail struct {
+type ItemDetail struct {
 	SKU   SKU
 	Count uint16
 	Price uint32
@@ -14,5 +14,5 @@ type CartItemDetail struct {
 
 type Cart struct {
 	UserID UserID
-	Items  []CartItem
+	Items  []Item
 }

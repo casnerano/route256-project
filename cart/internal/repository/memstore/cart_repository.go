@@ -25,7 +25,7 @@ func NewCartRepository() repository.Cart {
 
 var _ repository.Cart = (*cartRepository)(nil)
 
-func (rep *cartRepository) Add(_ context.Context, userID model.UserID, item *model.CartItem) error {
+func (rep *cartRepository) Add(_ context.Context, userID model.UserID, item *model.Item) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -37,14 +37,14 @@ func (rep *cartRepository) Add(_ context.Context, userID model.UserID, item *mod
 	return nil
 }
 
-func (rep *cartRepository) FindByUser(_ context.Context, userID model.UserID) ([]*model.CartItem, error) {
+func (rep *cartRepository) FindByUser(_ context.Context, userID model.UserID) ([]*model.Item, error) {
 	if userItems, ok := rep.store[userID]; ok {
 		rep.mu.RLock()
 		defer rep.mu.RUnlock()
 
-		var items []*model.CartItem
+		var items []*model.Item
 		for sku := range userItems {
-			items = append(items, &model.CartItem{
+			items = append(items, &model.Item{
 				SKU:   sku,
 				Count: userItems[sku],
 			})

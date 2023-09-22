@@ -20,7 +20,7 @@ type PIMClient interface {
 
 type LOMSClient interface {
 	GetStockInfo(ctx context.Context, sku model.SKU) (uint64, error)
-	CreateOrder(ctx context.Context, userID model.UserID, items []*model.CartItem) (model.OrderID, error)
+	CreateOrder(ctx context.Context, userID model.UserID, items []*model.Item) (model.OrderID, error)
 }
 
 type cart struct {
@@ -56,7 +56,7 @@ func (c *cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, coun
 		return ErrPIMLowAvailability
 	}
 
-	cartItem := model.CartItem{
+	cartItem := model.Item{
 		SKU:   sku,
 		Count: count,
 	}
@@ -81,7 +81,7 @@ func (c *cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) e
 // The items is a combination of cart values and product info from ProductService.
 //
 // TODO: the solution contains problem n+1 and incorrect behavior as a result of the context deadline.
-func (c *cart) List(ctx context.Context, userID model.UserID) ([]*model.CartItemDetail, error) {
+func (c *cart) List(ctx context.Context, userID model.UserID) ([]*model.ItemDetail, error) {
 	list, err := c.rep.FindByUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -91,14 +91,14 @@ func (c *cart) List(ctx context.Context, userID model.UserID) ([]*model.CartItem
 		return nil, err
 	}
 
-	detailList := make([]*model.CartItemDetail, 0, len(list))
+	detailList := make([]*model.ItemDetail, 0, len(list))
 	for k := range list {
 		productInfo, err := c.pim.GetProductInfo(ctx, list[k].SKU)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get product info from product.service: %w", err)
 		}
 
-		detailList = append(detailList, &model.CartItemDetail{
+		detailList = append(detailList, &model.ItemDetail{
 			SKU:   list[k].SKU,
 			Count: list[k].Count,
 			Price: productInfo.Price,

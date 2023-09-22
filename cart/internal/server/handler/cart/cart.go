@@ -8,7 +8,7 @@ import (
 type Service interface {
 	Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint16) error
 	Delete(ctx context.Context, userID model.UserID, sku model.SKU) error
-	List(ctx context.Context, userID model.UserID) ([]*model.CartItemDetail, error)
+	List(ctx context.Context, userID model.UserID) ([]*model.ItemDetail, error)
 	Clear(ctx context.Context, userID model.UserID) error
 	Checkout(ctx context.Context, userID model.UserID) (model.OrderID, error)
 }

@@ -67,7 +67,7 @@ func (c *client) GetStockInfo(ctx context.Context, sku model.SKU) (uint64, error
 	return responsePayload.Count, nil
 }
 
-func (c *client) CreateOrder(ctx context.Context, userID model.UserID, items []*model.CartItem) (model.OrderID, error) {
+func (c *client) CreateOrder(ctx context.Context, userID model.UserID, items []*model.Item) (model.OrderID, error) {
 	path, err := url.JoinPath(c.baseURL, "/api/order/create")
 	if err != nil {
 		return 0, err
