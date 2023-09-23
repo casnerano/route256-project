@@ -1,0 +1,4 @@
+server:
+  addr: :8080
+order:
+  cancel_unpaid_timeout: 600
