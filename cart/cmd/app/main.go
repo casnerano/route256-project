@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os/signal"
-	"route256/cart/internal/server"
+	"route256/cart/internal"
 	"syscall"
 )
 
@@ -14,20 +14,20 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
-	s, err := server.New()
+	app, err := internal.NewApp()
 	if err != nil {
-		log.Fatal(fmt.Errorf("failed initialization server: %w", err))
+		log.Fatal(err)
 	}
 
 	go func() {
-		if err = s.Run(); err != http.ErrServerClosed {
+		if err = app.RunServer(); err != http.ErrServerClosed {
 			log.Fatal(fmt.Errorf("failed run server: %w", err))
 		}
 	}()
 
 	<-ctx.Done()
 
-	if err = s.Shutdown(); err != nil {
+	if err = app.ShutdownServer(); err != nil {
 		log.Fatal(fmt.Errorf("failed shutdown server: %w", err))
 	}
 }

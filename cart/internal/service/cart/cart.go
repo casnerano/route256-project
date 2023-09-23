@@ -23,21 +23,21 @@ type LOMSClient interface {
 	CreateOrder(ctx context.Context, userID model.UserID, items []*model.Item) (model.OrderID, error)
 }
 
-type cart struct {
+type Cart struct {
 	rep  repository.Cart
 	pim  PIMClient
 	loms LOMSClient
 }
 
-func New(rep repository.Cart, pim PIMClient, loms LOMSClient) *cart {
-	return &cart{
+func New(rep repository.Cart, pim PIMClient, loms LOMSClient) *Cart {
+	return &Cart{
 		rep:  rep,
 		pim:  pim,
 		loms: loms,
 	}
 }
 
-func (c *cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint16) error {
+func (c *Cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint16) error {
 	_, err := c.pim.GetProductInfo(ctx, sku)
 	if err != nil {
 		if errors.Is(err, pim.ErrProductNotFound) {
@@ -64,7 +64,7 @@ func (c *cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, coun
 	return c.rep.Add(ctx, userID, &cartItem)
 }
 
-func (c *cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) error {
+func (c *Cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) error {
 	err := c.rep.DeleteBySKU(ctx, userID, sku)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -81,7 +81,7 @@ func (c *cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) e
 // The items is a combination of cart values and product info from ProductService.
 //
 // TODO: the solution contains problem n+1 and incorrect behavior as a result of the context deadline.
-func (c *cart) List(ctx context.Context, userID model.UserID) ([]*model.ItemDetail, error) {
+func (c *Cart) List(ctx context.Context, userID model.UserID) ([]*model.ItemDetail, error) {
 	list, err := c.rep.FindByUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -109,7 +109,7 @@ func (c *cart) List(ctx context.Context, userID model.UserID) ([]*model.ItemDeta
 	return detailList, nil
 }
 
-func (c *cart) Clear(ctx context.Context, userID model.UserID) error {
+func (c *Cart) Clear(ctx context.Context, userID model.UserID) error {
 	err := c.rep.DeleteByUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -122,7 +122,7 @@ func (c *cart) Clear(ctx context.Context, userID model.UserID) error {
 	return nil
 }
 
-func (c *cart) Checkout(ctx context.Context, userID model.UserID) (model.OrderID, error) {
+func (c *Cart) Checkout(ctx context.Context, userID model.UserID) (model.OrderID, error) {
 	items, err := c.rep.FindByUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {

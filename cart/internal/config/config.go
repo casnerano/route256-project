@@ -13,11 +13,13 @@ const defaultFilename = "./configs/config.yaml"
 
 var yamlFilename string
 
+type Server struct {
+	Addr string `yaml:"addr"`
+}
+
 type Config struct {
-	Server struct {
-		Addr string `yaml:"addr"`
-	} `yaml:"server"`
-	LOMS struct {
+	Server Server `yaml:"server"`
+	LOMS   struct {
 		Addr string `yaml:"addr"`
 	} `yaml:"LOMS"`
 	PIM struct {
