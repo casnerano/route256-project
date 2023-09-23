@@ -12,15 +12,15 @@ import (
 	"runtime/debug"
 )
 
-type client struct {
+type Client struct {
 	baseURL string
 }
 
-func NewClient(baseURL string) *client {
-	return &client{baseURL: baseURL}
+func NewClient(baseURL string) *Client {
+	return &Client{baseURL: baseURL}
 }
 
-func (c *client) GetStockInfo(ctx context.Context, sku model.SKU) (uint64, error) {
+func (c *Client) GetStockInfo(ctx context.Context, sku model.SKU) (uint64, error) {
 	path, err := url.JoinPath(c.baseURL, "/api/stock/info")
 	if err != nil {
 		return 0, err
@@ -67,7 +67,7 @@ func (c *client) GetStockInfo(ctx context.Context, sku model.SKU) (uint64, error
 	return responsePayload.Count, nil
 }
 
-func (c *client) CreateOrder(ctx context.Context, userID model.UserID, items []*model.Item) (model.OrderID, error) {
+func (c *Client) CreateOrder(ctx context.Context, userID model.UserID, items []*model.Item) (model.OrderID, error) {
 	path, err := url.JoinPath(c.baseURL, "/api/order/create")
 	if err != nil {
 		return 0, err

@@ -4,11 +4,8 @@ import (
 	"context"
 	"net/http"
 	"route256/cart/internal/config"
-	"route256/cart/internal/repository/memstore"
-	hCart "route256/cart/internal/server/handler/cart"
-	sCart "route256/cart/internal/service/cart"
-	"route256/cart/internal/service/client/loms"
-	"route256/cart/internal/service/client/pim"
+	handlerCart "route256/cart/internal/server/handler/cart"
+	serviceCart "route256/cart/internal/service/cart"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -16,24 +13,23 @@ import (
 )
 
 type handler struct {
-	cart *hCart.Handler
+	cart *handlerCart.Handler
 }
 
-type server struct {
-	config     *config.Config
+type Server struct {
+	config     config.Server
+	handler    *handler
 	httpServer *http.Server
 }
 
-func New() (*server, error) {
-	c, err := config.New()
-	if err != nil {
-		return nil, err
-	}
-
-	s := &server{
+func New(c config.Server, serviceCart *serviceCart.Cart) (*Server, error) {
+	s := &Server{
 		config: c,
+		handler: &handler{
+			cart: handlerCart.NewHandler(serviceCart),
+		},
 		httpServer: &http.Server{
-			Addr: c.Server.Addr,
+			Addr: c.Addr,
 		},
 	}
 
@@ -42,11 +38,11 @@ func New() (*server, error) {
 	return s, nil
 }
 
-func (s *server) Run() error {
+func (s *Server) Run() error {
 	return s.httpServer.ListenAndServe()
 }
 
-func (s *server) Shutdown() error {
+func (s *Server) Shutdown() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -57,34 +53,19 @@ func (s *server) Shutdown() error {
 	return nil
 }
 
-func (s *server) getHandler() *handler {
-	rep := memstore.NewCartRepository()
-
-	pimClient := pim.NewClient(s.config.PIM.Addr)
-	lomsClient := loms.NewClient(s.config.LOMS.Addr)
-
-	sc := sCart.New(rep, pimClient, lomsClient)
-
-	return &handler{
-		cart: hCart.NewHandler(sc),
-	}
-}
-
-func (s *server) init() {
-	h := s.getHandler()
-
+func (s *Server) init() {
 	router := chi.NewRouter()
 	router.Use(
 		middleware.SetHeader("Content-Type", "application/json"),
 		middleware.Recoverer,
 	)
 
-	router.Post("/api/cart/item/add", h.cart.Add)
-	router.Post("/api/cart/item/delete", h.cart.Delete)
+	router.Post("/api/cart/item/add", s.handler.cart.Add)
+	router.Post("/api/cart/item/delete", s.handler.cart.Delete)
 
-	router.Post("/api/cart/list", h.cart.List)
-	router.Post("/api/cart/clear", h.cart.Clear)
-	router.Post("/api/cart/checkout", h.cart.Checkout)
+	router.Post("/api/cart/list", s.handler.cart.List)
+	router.Post("/api/cart/clear", s.handler.cart.Clear)
+	router.Post("/api/cart/checkout", s.handler.cart.Checkout)
 
 	s.httpServer.Handler = router
 }

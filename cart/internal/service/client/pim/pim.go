@@ -15,16 +15,16 @@ import (
 
 var ErrProductNotFound = errors.New("product not found")
 
-type client struct {
+type Client struct {
 	baseURL string
 }
 
-func NewClient(baseURL string) *client {
-	return &client{baseURL: baseURL}
+func NewClient(baseURL string) *Client {
+	return &Client{baseURL: baseURL}
 }
 
 // TODO: token from context
-func (c *client) GetProductInfo(ctx context.Context, sku model.SKU) (*model.ProductInfo, error) {
+func (c *Client) GetProductInfo(ctx context.Context, sku model.SKU) (*model.ProductInfo, error) {
 	path, err := url.JoinPath(c.baseURL, "/get_product")
 	if err != nil {
 		return nil, err
