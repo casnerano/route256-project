@@ -2,6 +2,7 @@ package cart
 
 import (
 	"context"
+	pb "route256/cart/api/v1"
 	"route256/cart/internal/model"
 )
 
@@ -14,6 +15,7 @@ type Service interface {
 }
 
 type Handler struct {
+	pb.UnimplementedCartServer
 	service Service
 }
 
