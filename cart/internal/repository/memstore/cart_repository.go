@@ -9,7 +9,7 @@ import (
 
 // cartStorage is the user's cart storage.
 // For each USER a map is stored SKU => COUNT.
-type cartStorage = map[model.UserID]map[model.SKU]uint16
+type cartStorage = map[model.UserID]map[model.SKU]uint32
 
 type cartRepository struct {
 	mu    *sync.RWMutex
@@ -30,7 +30,7 @@ func (rep *cartRepository) Add(_ context.Context, userID model.UserID, item *mod
 	defer rep.mu.Unlock()
 
 	if _, ok := rep.store[userID]; !ok {
-		rep.store[userID] = make(map[model.SKU]uint16)
+		rep.store[userID] = make(map[model.SKU]uint32)
 	}
 
 	rep.store[userID][item.SKU] = item.Count

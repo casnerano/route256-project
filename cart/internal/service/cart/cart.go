@@ -37,7 +37,7 @@ func New(rep repository.Cart, pim PIMClient, loms LOMSClient) *Cart {
 	}
 }
 
-func (c *Cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint16) error {
+func (c *Cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint32) error {
 	_, err := c.pim.GetProductInfo(ctx, sku)
 	if err != nil {
 		if errors.Is(err, pim.ErrProductNotFound) {

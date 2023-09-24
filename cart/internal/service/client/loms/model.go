@@ -12,7 +12,7 @@ type GetStockInfoResponse struct {
 
 type CreateOrderItem struct {
 	SKU   model.SKU `json:"sku"`
-	Count uint16    `json:"count"`
+	Count uint32    `json:"count"`
 }
 
 type CreateOrderRequest struct {
