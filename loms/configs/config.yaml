@@ -1,4 +1,4 @@
 server:
-  addr: :3200
+  addr: 127.0.0.1:3200
 order:
   cancel_unpaid_timeout: 600

@@ -19,7 +19,7 @@ type PIMClient interface {
 }
 
 type LOMSClient interface {
-	GetStockInfo(ctx context.Context, sku model.SKU) (uint64, error)
+	GetStockInfo(ctx context.Context, sku model.SKU) (uint32, error)
 	CreateOrder(ctx context.Context, userID model.UserID, items []*model.Item) (model.OrderID, error)
 }
 
@@ -52,7 +52,7 @@ func (c *Cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, coun
 		return err
 	}
 
-	if uint64(count) > available {
+	if count > available {
 		return ErrPIMLowAvailability
 	}
 

@@ -43,9 +43,16 @@ func NewApp() (*application, error) {
 		cart: memstore.NewCartRepository(),
 	}
 
+	pimClient := pim.NewClient(app.config.PIM.Addr)
+
+	lomsClient, err := loms.NewClient(app.config.LOMS.Addr)
+	if err != nil {
+		return nil, err
+	}
+
 	app.depService = &depService{
-		pimClient:  pim.NewClient(app.config.PIM.Addr),
-		lomsClient: loms.NewClient(app.config.LOMS.Addr),
+		pimClient:  pimClient,
+		lomsClient: lomsClient,
 	}
 
 	app.depService.cart = cart.New(
@@ -80,5 +87,8 @@ func (a *application) RunServer() error {
 }
 
 func (a *application) ShutdownServer() error {
+	if err := a.depService.lomsClient.Close(); err != nil {
+		return nil
+	}
 	return a.server.Shutdown()
 }
