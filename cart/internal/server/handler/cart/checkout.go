@@ -27,7 +27,7 @@ func (s Handler) Checkout(ctx context.Context, in *pb.CheckoutRequest) (*pb.Chec
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
 
-		return nil, status.Error(codes.Internal, codes.Internal.String())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return response, nil

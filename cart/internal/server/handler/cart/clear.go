@@ -26,7 +26,7 @@ func (s Handler) Clear(ctx context.Context, in *pb.ClearRequest) (*pb.ClearRespo
 			return nil, status.Error(codes.NotFound, codes.NotFound.String())
 		}
 
-		return nil, status.Error(codes.Internal, codes.Internal.String())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return response, nil

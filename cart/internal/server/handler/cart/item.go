@@ -26,7 +26,7 @@ func (s Handler) ItemAdd(ctx context.Context, in *pb.ItemAddRequest) (*pb.ItemAd
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
 
-		return nil, status.Error(codes.Internal, codes.Internal.String())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return response, nil
@@ -48,7 +48,7 @@ func (s Handler) ItemDelete(ctx context.Context, in *pb.ItemDeleteRequest) (*pb.
 			return nil, status.Error(codes.NotFound, codes.NotFound.String())
 		}
 
-		return nil, status.Error(codes.Internal, codes.Internal.String())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return response, nil

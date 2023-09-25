@@ -26,7 +26,7 @@ func (s Handler) List(ctx context.Context, in *pb.ListRequest) (*pb.ListResponse
 			return response, nil
 		}
 
-		return nil, status.Error(codes.Internal, codes.Internal.String())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	for key := range list {

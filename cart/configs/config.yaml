@@ -1,6 +1,6 @@
 server:
-  addr: 127.0.0.1:3200
+  addr: 0.0.0.0:3200
 LOMS:
-  addr: http://loms:3200
+  addr: loms:3200
 PIM:
   addr: http://route256.pavl.uk:8080
