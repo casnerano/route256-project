@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package route256.cart.api.v1;
 
-option go_package = "internal/server/proto/cart";
+option go_package = "pkg/proto/cart/v1;cart";
 
 message ListItem {
   uint64 sku = 1;

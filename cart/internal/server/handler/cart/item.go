@@ -3,16 +3,15 @@ package cart
 import (
 	"context"
 	"errors"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	pb "route256/cart/internal/server/proto/cart"
 	cartService "route256/cart/internal/service/cart"
+	pb "route256/cart/pkg/proto/cart/v1"
 	"time"
 )
 
-func (s Handler) ItemAdd(ctx context.Context, in *pb.ItemAddRequest) (*empty.Empty, error) {
-	response := &empty.Empty{}
+func (s Handler) ItemAdd(ctx context.Context, in *pb.ItemAddRequest) (*pb.ItemAddResponse, error) {
+	response := &pb.ItemAddResponse{}
 
 	if in.GetUser() == 0 || in.GetCount() == 0 || in.GetSku() == 0 {
 		return nil, status.Error(codes.InvalidArgument, codes.InvalidArgument.String())
@@ -33,8 +32,8 @@ func (s Handler) ItemAdd(ctx context.Context, in *pb.ItemAddRequest) (*empty.Emp
 	return response, nil
 }
 
-func (s Handler) ItemDelete(ctx context.Context, in *pb.ItemDeleteRequest) (*empty.Empty, error) {
-	response := &empty.Empty{}
+func (s Handler) ItemDelete(ctx context.Context, in *pb.ItemDeleteRequest) (*pb.ItemDeleteResponse, error) {
+	response := &pb.ItemDeleteResponse{}
 
 	if in.GetUser() == 0 || in.GetSku() == 0 {
 		return nil, status.Error(codes.InvalidArgument, codes.InvalidArgument.String())

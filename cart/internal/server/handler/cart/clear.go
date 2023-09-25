@@ -3,16 +3,15 @@ package cart
 import (
 	"context"
 	"errors"
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	pb "route256/cart/internal/server/proto/cart"
 	cartService "route256/cart/internal/service/cart"
+	pb "route256/cart/pkg/proto/cart/v1"
 	"time"
 )
 
-func (s Handler) Clear(ctx context.Context, in *pb.ClearRequest) (*empty.Empty, error) {
-	response := &empty.Empty{}
+func (s Handler) Clear(ctx context.Context, in *pb.ClearRequest) (*pb.ClearResponse, error) {
+	response := &pb.ClearResponse{}
 
 	if in.GetUser() == 0 {
 		return nil, status.Error(codes.InvalidArgument, codes.InvalidArgument.String())

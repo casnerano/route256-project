@@ -9,10 +9,10 @@ import (
 	"route256/loms/internal/server"
 	orderHandler "route256/loms/internal/server/handler/order"
 	stockHandler "route256/loms/internal/server/handler/stock"
-	pbOrder "route256/loms/internal/server/proto/order"
-	pbStock "route256/loms/internal/server/proto/stock"
 	"route256/loms/internal/service/order"
 	"route256/loms/internal/service/stock"
+	pbOrder "route256/loms/pkg/proto/order/v1"
+	pbStock "route256/loms/pkg/proto/stock/v1"
 	"time"
 )
 

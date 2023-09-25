@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package route256.loms.api.v1.order;
 
-option go_package = "internal/server/proto/order";
+option go_package = "pkg/proto/order/v1;order";
 
 message Item {
   uint64 sku = 1;

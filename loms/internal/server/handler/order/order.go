@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"route256/loms/internal/model"
-	pb "route256/loms/internal/server/proto/order"
+	pb "route256/loms/pkg/proto/order/v1"
 )
 
 type item struct {

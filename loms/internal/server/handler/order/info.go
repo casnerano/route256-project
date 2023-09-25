@@ -5,8 +5,8 @@ import (
 	"errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	pb "route256/loms/internal/server/proto/order"
 	orderService "route256/loms/internal/service/order"
+	pb "route256/loms/pkg/proto/order/v1"
 	"time"
 )
 

@@ -5,7 +5,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"route256/loms/internal/model"
-	pb "route256/loms/internal/server/proto/stock"
+	pb "route256/loms/pkg/proto/stock/v1"
 	"time"
 )
 

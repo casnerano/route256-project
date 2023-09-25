@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	pb "route256/cart/api/v1"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository"
 	"route256/cart/internal/repository/memstore"
@@ -11,6 +10,7 @@ import (
 	"route256/cart/internal/service/cart"
 	"route256/cart/internal/service/client/loms"
 	"route256/cart/internal/service/client/pim"
+	pb "route256/cart/pkg/proto/cart/v1"
 )
 
 type depRepository struct {
