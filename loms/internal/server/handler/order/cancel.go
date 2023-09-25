@@ -2,61 +2,35 @@ package order
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"log"
-	"net/http"
-	"route256/loms/internal/model"
-	"route256/loms/internal/server/handler"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	pb "route256/loms/internal/server/proto/order"
 	orderService "route256/loms/internal/service/order"
-	"runtime/debug"
 	"time"
 )
 
-type cancelRequest struct {
-	OrderID model.OrderID `json:"orderID"`
-}
-
-func (c *cancelRequest) valid() bool {
-	return c.OrderID != 0
-}
-
-type cancelResponse struct{}
-
-func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			log.Printf("Failed close request body: %s\n", debug.Stack())
-		}
-	}()
-
-	cancelRequestStruct := cancelRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&cancelRequestStruct); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+func (h *Handler) Cancel(ctx context.Context, in *pb.CancelRequest) (*pb.CancelResponse, error) {
+	if in.GetOrderId() == 0 {
+		return nil, status.Error(codes.InvalidArgument, codes.InvalidArgument.String())
 	}
 
-	if !cancelRequestStruct.valid() {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
+	sCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
 	defer cancel()
 
-	err := h.service.Cancel(ctx, cancelRequestStruct.OrderID)
+	err := h.service.Cancel(sCtx, in.GetOrderId())
 	if err != nil {
 		if errors.Is(err, orderService.ErrNotFound) ||
 			errors.Is(err, orderService.ErrCancelPaidOrder) ||
 			errors.Is(err, orderService.ErrCancelReserve) {
 
-			handler.WriteResponseError(w, 0, err.Error())
-			return
+			return nil, status.Error(codes.Unknown, err.Error())
 		}
 
-		handler.WriteInternalError(w, err)
-		return
+		return nil, status.Error(codes.Internal, codes.Internal.String())
 	}
 
-	handler.WriteResponse(w, cancelResponse{})
+	response := &pb.CancelResponse{}
+
+	return response, nil
 }

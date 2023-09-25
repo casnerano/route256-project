@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"google.golang.org/grpc"
 	pb "route256/cart/api/v1"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository"
@@ -65,14 +64,13 @@ func NewApp() (*application, error) {
 
 func (a *application) initServer() error {
 	var err error
+
 	a.server, err = server.New(a.config.Server)
 	if err != nil {
 		return err
 	}
 
-	a.server.Modifier(func(g *grpc.Server) {
-		pb.RegisterCartServer(g, handlerCart.NewHandler(a.depService.cart))
-	})
+	pb.RegisterCartServer(a.server.GRPC, handlerCart.NewHandler(a.depService.cart))
 
 	return nil
 }

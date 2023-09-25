@@ -1,44 +1,28 @@
 package server
 
 import (
-	"context"
-	"net/http"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+	"net"
 	"route256/loms/internal/config"
-	handlerOrder "route256/loms/internal/server/handler/order"
-	handlerStock "route256/loms/internal/server/handler/stock"
-	serviceOrder "route256/loms/internal/service/order"
-	serviceStock "route256/loms/internal/service/stock"
-	"time"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 )
 
-type handler struct {
-	order *handlerOrder.Handler
-	stock *handlerStock.Handler
-}
-
 type Server struct {
-	config     config.Server
-	handler    *handler
-	httpServer *http.Server
+	config   config.Server
+	listener net.Listener
+	GRPC     *grpc.Server
 }
 
-func New(
-	c config.Server,
-	serviceOrder *serviceOrder.Order,
-	serviceStock *serviceStock.Stock,
-) (*Server, error) {
+func New(c config.Server) (*Server, error) {
+	listener, err := net.Listen("tcp", c.Addr)
+	if err != nil {
+		return nil, err
+	}
+
 	s := &Server{
-		config: c,
-		handler: &handler{
-			order: handlerOrder.NewHandler(serviceOrder),
-			stock: handlerStock.NewHandler(serviceStock),
-		},
-		httpServer: &http.Server{
-			Addr: c.Addr,
-		},
+		config:   c,
+		listener: listener,
+		GRPC:     grpc.NewServer(),
 	}
 
 	s.init()
@@ -47,33 +31,14 @@ func New(
 }
 
 func (s *Server) Run() error {
-	return s.httpServer.ListenAndServe()
+	return s.GRPC.Serve(s.listener)
 }
 
 func (s *Server) Shutdown() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	if err := s.httpServer.Shutdown(ctx); err != nil {
-		return err
-	}
-
-	return nil
+	s.GRPC.GracefulStop()
+	return s.listener.Close()
 }
 
 func (s *Server) init() {
-	router := chi.NewRouter()
-	router.Use(
-		middleware.SetHeader("Content-Type", "application/json"),
-		middleware.Recoverer,
-	)
-
-	router.Post("/api/stock/info", s.handler.stock.Info)
-
-	router.Post("/api/order/create", s.handler.order.Create)
-	router.Post("/api/order/info", s.handler.order.Info)
-	router.Post("/api/order/pay", s.handler.order.Pay)
-	router.Post("/api/order/cancel", s.handler.order.Cancel)
-
-	s.httpServer.Handler = router
+	reflection.Register(s.GRPC)
 }

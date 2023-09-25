@@ -2,27 +2,19 @@ package stock
 
 import (
 	"context"
-	"encoding/json"
-	"log"
-	"net/http"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"route256/loms/internal/model"
-	"runtime/debug"
+	pb "route256/loms/internal/server/proto/stock"
 	"time"
 )
 
 type Service interface {
-	GetAvailable(ctx context.Context, sku model.SKU) (uint16, error)
-}
-
-type stockInfoRequest struct {
-	SKU model.SKU `json:"sku"`
-}
-
-type stockInfoResponse struct {
-	Count uint16 `json:"count"`
+	GetAvailable(ctx context.Context, sku model.SKU) (uint32, error)
 }
 
 type Handler struct {
+	pb.UnimplementedStockServer
 	service Service
 }
 
@@ -30,34 +22,21 @@ func NewHandler(service Service) *Handler {
 	return &Handler{service: service}
 }
 
-func (h *Handler) Info(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			log.Printf("Failed close request body: %s\n", debug.Stack())
-		}
-	}()
-
-	stockInfoRequestStruct := stockInfoRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&stockInfoRequestStruct); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+func (h *Handler) Info(ctx context.Context, in *pb.InfoRequest) (*pb.InfoResponse, error) {
+	if in.GetSku() == 0 {
+		return nil, status.Error(codes.InvalidArgument, codes.InvalidArgument.String())
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
+	sCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
 	defer cancel()
 
 	var err error
-	response := stockInfoResponse{}
+	response := &pb.InfoResponse{}
 
-	response.Count, err = h.service.GetAvailable(ctx, stockInfoRequestStruct.SKU)
-
+	response.Count, err = h.service.GetAvailable(sCtx, in.GetSku())
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, status.Error(codes.Internal, codes.Internal.String())
 	}
 
-	if err = json.NewEncoder(w).Encode(response); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	return response, nil
 }

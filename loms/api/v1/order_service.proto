@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package route256.loms.api.v1.order;
+
+option go_package = "internal/server/proto/order";
+
+message Item {
+  uint64 sku = 1;
+  uint32 count = 2;
+}
+
+enum Status {
+    NEW = 0;
+    AWAIT_PAYMENT = 1;
+    FAILED = 2;
+    PAYED = 3;
+    CANCELED = 4;
+}
+
+message PayRequest {
+  uint64 order_id = 1;
+}
+
+message PayResponse { }
+
+message InfoRequest {
+  uint64 order_id = 1;
+}
+
+message InfoResponse {
+  Status status = 1;
+  uint64 user = 2;
+  repeated Item items = 3;
+}
+
+message CreateRequest {
+  uint64 user = 1;
+  repeated Item items = 2;
+}
+
+message CreateResponse {
+  uint64 order_id = 1;
+}
+
+message CancelRequest {
+  uint64 order_id = 1;
+}
+
+message CancelResponse { }
+
+service Order {
+  rpc Pay(PayRequest) returns (PayResponse);
+  rpc Info(InfoRequest) returns (InfoResponse);
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Cancel(CancelRequest) returns (CancelResponse);
+}

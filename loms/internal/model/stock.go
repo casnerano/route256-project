@@ -1,6 +1,6 @@
 package model
 
 type Stock struct {
-	Available uint16
-	Reserved  uint16
+	Available uint32
+	Reserved  uint32
 }

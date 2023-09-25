@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package route256.loms.api.v1.stock;
+
+option go_package = "internal/server/proto/stock";
+
+message InfoRequest {
+  uint64 sku = 1;
+}
+
+message InfoResponse {
+  uint32 count = 1;
+}
+
+service Stock {
+  rpc Info (InfoRequest) returns (InfoResponse);
+}

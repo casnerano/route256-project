@@ -2,13 +2,12 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.6.1
-// source: api/v1/service.proto
+// source: api/v1/cart_service.proto
 
 package cart
 
 import (
 	context "context"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -32,9 +31,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CartClient interface {
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
-	Clear(ctx context.Context, in *ClearRequest, opts ...grpc.CallOption) (*empty.Empty, error)
-	ItemAdd(ctx context.Context, in *ItemAddRequest, opts ...grpc.CallOption) (*empty.Empty, error)
-	ItemDelete(ctx context.Context, in *ItemDeleteRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	Clear(ctx context.Context, in *ClearRequest, opts ...grpc.CallOption) (*ClearResponse, error)
+	ItemAdd(ctx context.Context, in *ItemAddRequest, opts ...grpc.CallOption) (*ItemAddResponse, error)
+	ItemDelete(ctx context.Context, in *ItemDeleteRequest, opts ...grpc.CallOption) (*ItemDeleteResponse, error)
 	Checkout(ctx context.Context, in *CheckoutRequest, opts ...grpc.CallOption) (*CheckoutResponse, error)
 }
 
@@ -55,8 +54,8 @@ func (c *cartClient) List(ctx context.Context, in *ListRequest, opts ...grpc.Cal
 	return out, nil
 }
 
-func (c *cartClient) Clear(ctx context.Context, in *ClearRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *cartClient) Clear(ctx context.Context, in *ClearRequest, opts ...grpc.CallOption) (*ClearResponse, error) {
+	out := new(ClearResponse)
 	err := c.cc.Invoke(ctx, Cart_Clear_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -64,8 +63,8 @@ func (c *cartClient) Clear(ctx context.Context, in *ClearRequest, opts ...grpc.C
 	return out, nil
 }
 
-func (c *cartClient) ItemAdd(ctx context.Context, in *ItemAddRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *cartClient) ItemAdd(ctx context.Context, in *ItemAddRequest, opts ...grpc.CallOption) (*ItemAddResponse, error) {
+	out := new(ItemAddResponse)
 	err := c.cc.Invoke(ctx, Cart_ItemAdd_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -73,8 +72,8 @@ func (c *cartClient) ItemAdd(ctx context.Context, in *ItemAddRequest, opts ...gr
 	return out, nil
 }
 
-func (c *cartClient) ItemDelete(ctx context.Context, in *ItemDeleteRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *cartClient) ItemDelete(ctx context.Context, in *ItemDeleteRequest, opts ...grpc.CallOption) (*ItemDeleteResponse, error) {
+	out := new(ItemDeleteResponse)
 	err := c.cc.Invoke(ctx, Cart_ItemDelete_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -96,9 +95,9 @@ func (c *cartClient) Checkout(ctx context.Context, in *CheckoutRequest, opts ...
 // for forward compatibility
 type CartServer interface {
 	List(context.Context, *ListRequest) (*ListResponse, error)
-	Clear(context.Context, *ClearRequest) (*empty.Empty, error)
-	ItemAdd(context.Context, *ItemAddRequest) (*empty.Empty, error)
-	ItemDelete(context.Context, *ItemDeleteRequest) (*empty.Empty, error)
+	Clear(context.Context, *ClearRequest) (*ClearResponse, error)
+	ItemAdd(context.Context, *ItemAddRequest) (*ItemAddResponse, error)
+	ItemDelete(context.Context, *ItemDeleteRequest) (*ItemDeleteResponse, error)
 	Checkout(context.Context, *CheckoutRequest) (*CheckoutResponse, error)
 	mustEmbedUnimplementedCartServer()
 }
@@ -110,13 +109,13 @@ type UnimplementedCartServer struct {
 func (UnimplementedCartServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedCartServer) Clear(context.Context, *ClearRequest) (*empty.Empty, error) {
+func (UnimplementedCartServer) Clear(context.Context, *ClearRequest) (*ClearResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Clear not implemented")
 }
-func (UnimplementedCartServer) ItemAdd(context.Context, *ItemAddRequest) (*empty.Empty, error) {
+func (UnimplementedCartServer) ItemAdd(context.Context, *ItemAddRequest) (*ItemAddResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ItemAdd not implemented")
 }
-func (UnimplementedCartServer) ItemDelete(context.Context, *ItemDeleteRequest) (*empty.Empty, error) {
+func (UnimplementedCartServer) ItemDelete(context.Context, *ItemDeleteRequest) (*ItemDeleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ItemDelete not implemented")
 }
 func (UnimplementedCartServer) Checkout(context.Context, *CheckoutRequest) (*CheckoutResponse, error) {
@@ -254,5 +253,5 @@ var Cart_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/v1/service.proto",
+	Metadata: "api/v1/cart_service.proto",
 }

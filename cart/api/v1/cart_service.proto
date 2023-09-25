@@ -2,9 +2,7 @@ syntax = "proto3";
 
 package route256.cart.api.v1;
 
-option go_package = "api/v1/cart";
-
-import "google/protobuf/empty.proto";
+option go_package = "internal/server/proto/cart";
 
 message ListItem {
   uint64 sku = 1;
@@ -26,16 +24,22 @@ message ClearRequest {
   uint64 user = 1;
 }
 
+message ClearResponse { }
+
 message ItemAddRequest {
   uint64 user = 1;
   uint64 sku = 2;
   uint32 count = 3;
 }
 
+message ItemAddResponse { }
+
 message ItemDeleteRequest {
   uint64 user = 1;
   uint64 sku = 2;
 }
+
+message ItemDeleteResponse { }
 
 message CheckoutRequest {
   uint64 user = 1;
@@ -47,9 +51,9 @@ message CheckoutResponse {
 
 service Cart {
   rpc List (ListRequest) returns (ListResponse);
-  rpc Clear (ClearRequest) returns (google.protobuf.Empty);
-  rpc ItemAdd (ItemAddRequest) returns (google.protobuf.Empty);
-  rpc ItemDelete (ItemDeleteRequest) returns (google.protobuf.Empty);
+  rpc Clear (ClearRequest) returns (ClearResponse);
+  rpc ItemAdd (ItemAddRequest) returns (ItemAddResponse);
+  rpc ItemDelete (ItemDeleteRequest) returns (ItemDeleteResponse);
   rpc Checkout (CheckoutRequest) returns (CheckoutResponse);
 }
 

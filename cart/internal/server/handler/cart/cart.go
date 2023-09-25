@@ -2,8 +2,8 @@ package cart
 
 import (
 	"context"
-	pb "route256/cart/api/v1"
 	"route256/cart/internal/model"
+	pb "route256/cart/internal/server/proto/cart"
 )
 
 type Service interface {

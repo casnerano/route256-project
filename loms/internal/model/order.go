@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-type OrderID = int64
+type OrderID = uint64
 
 type OrderStatus string
 
@@ -16,7 +16,7 @@ const (
 
 type OrderItem struct {
 	SKU   SKU
-	Count uint16
+	Count uint32
 }
 
 type Order struct {

@@ -10,7 +10,7 @@ import (
 type Server struct {
 	config   config.Server
 	listener net.Listener
-	grpc     *grpc.Server
+	GRPC     *grpc.Server
 }
 
 func New(c config.Server) (*Server, error) {
@@ -22,7 +22,7 @@ func New(c config.Server) (*Server, error) {
 	s := &Server{
 		config:   c,
 		listener: listener,
-		grpc:     grpc.NewServer(),
+		GRPC:     grpc.NewServer(),
 	}
 
 	s.init()
@@ -30,19 +30,15 @@ func New(c config.Server) (*Server, error) {
 	return s, nil
 }
 
-func (s *Server) Modifier(modify func(*grpc.Server)) {
-	modify(s.grpc)
-}
-
 func (s *Server) Run() error {
-	return s.grpc.Serve(s.listener)
+	return s.GRPC.Serve(s.listener)
 }
 
 func (s *Server) Shutdown() error {
-	s.grpc.GracefulStop()
+	s.GRPC.GracefulStop()
 	return s.listener.Close()
 }
 
 func (s *Server) init() {
-	reflection.Register(s.grpc)
+	reflection.Register(s.GRPC)
 }

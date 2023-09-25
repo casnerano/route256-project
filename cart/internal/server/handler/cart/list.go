@@ -5,7 +5,7 @@ import (
 	"errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	pb "route256/cart/api/v1"
+	pb "route256/cart/internal/server/proto/cart"
 	cartService "route256/cart/internal/service/cart"
 	"time"
 )

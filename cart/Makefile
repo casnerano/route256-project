@@ -8,7 +8,7 @@ PACKAGE=route256/cart/cmd/app
 
 all: format build test lint
 
-build: bindir
+build: bindir build-proto
 	go build -o ${BINDIR}/app ${PACKAGE}
 
 test:
@@ -38,3 +38,6 @@ install-smartimports: bindir
 	test -f ${SMARTIMPORTS} || \
 		(GOBIN=${BINDIR} go install github.com/pav5000/smartimports/cmd/smartimports@latest && \
 		mv ${BINDIR}/smartimports ${SMARTIMPORTS})
+
+build-proto:
+	protoc --go_out=. --go_opt=paths=import --go-grpc_out=. --go-grpc_opt=paths=import api/v1/*.proto

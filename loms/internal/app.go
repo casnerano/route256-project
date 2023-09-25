@@ -7,6 +7,10 @@ import (
 	"route256/loms/internal/repository"
 	"route256/loms/internal/repository/memstore"
 	"route256/loms/internal/server"
+	orderHandler "route256/loms/internal/server/handler/order"
+	stockHandler "route256/loms/internal/server/handler/stock"
+	pbOrder "route256/loms/internal/server/proto/order"
+	pbStock "route256/loms/internal/server/proto/stock"
 	"route256/loms/internal/service/order"
 	"route256/loms/internal/service/stock"
 	"time"
@@ -74,14 +78,14 @@ func NewApp() (*application, error) {
 
 func (a *application) initServer() error {
 	var err error
-	a.server, err = server.New(
-		a.config.Server,
-		a.depService.order,
-		a.depService.stock,
-	)
+
+	a.server, err = server.New(a.config.Server)
 	if err != nil {
 		return err
 	}
+
+	pbOrder.RegisterOrderServer(a.server.GRPC, orderHandler.NewHandler(a.depService.order))
+	pbStock.RegisterStockServer(a.server.GRPC, stockHandler.NewHandler(a.depService.stock))
 
 	return nil
 }
