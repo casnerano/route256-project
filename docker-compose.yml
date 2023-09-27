@@ -5,6 +5,7 @@ services:
     build: ./cart/
     ports:
       - "3201:3200"
+      - "8081:8080"
     depends_on:
       - loms
   loms:
@@ -12,6 +13,7 @@ services:
     build: ./loms/
     ports:
       - "3202:3200"
+      - "8082:8080"
   # notification:
   #   image: notification
   #   build: ./notification

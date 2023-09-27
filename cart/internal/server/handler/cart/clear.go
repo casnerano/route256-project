@@ -13,8 +13,8 @@ import (
 func (s Handler) Clear(ctx context.Context, in *pb.ClearRequest) (*pb.ClearResponse, error) {
 	response := &pb.ClearResponse{}
 
-	if in.GetUser() == 0 {
-		return nil, status.Error(codes.InvalidArgument, codes.InvalidArgument.String())
+	if err := in.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	sCtx, cancel := context.WithTimeout(ctx, 300*time.Second)

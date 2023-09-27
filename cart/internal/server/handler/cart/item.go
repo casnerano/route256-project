@@ -13,8 +13,8 @@ import (
 func (s Handler) ItemAdd(ctx context.Context, in *pb.ItemAddRequest) (*pb.ItemAddResponse, error) {
 	response := &pb.ItemAddResponse{}
 
-	if in.GetUser() == 0 || in.GetCount() == 0 || in.GetSku() == 0 {
-		return nil, status.Error(codes.InvalidArgument, codes.InvalidArgument.String())
+	if err := in.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	sCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
@@ -35,8 +35,8 @@ func (s Handler) ItemAdd(ctx context.Context, in *pb.ItemAddRequest) (*pb.ItemAd
 func (s Handler) ItemDelete(ctx context.Context, in *pb.ItemDeleteRequest) (*pb.ItemDeleteResponse, error) {
 	response := &pb.ItemDeleteResponse{}
 
-	if in.GetUser() == 0 || in.GetSku() == 0 {
-		return nil, status.Error(codes.InvalidArgument, codes.InvalidArgument.String())
+	if err := in.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	sCtx, cancel := context.WithTimeout(ctx, 300*time.Second)

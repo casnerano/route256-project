@@ -6,11 +6,9 @@ import (
 	"route256/cart/internal/repository"
 	"route256/cart/internal/repository/memstore"
 	"route256/cart/internal/server"
-	handlerCart "route256/cart/internal/server/handler/cart"
 	"route256/cart/internal/service/cart"
 	"route256/cart/internal/service/client/loms"
 	"route256/cart/internal/service/client/pim"
-	pb "route256/cart/pkg/proto/cart/v1"
 )
 
 type depRepository struct {
@@ -61,7 +59,7 @@ func NewApp() (*application, error) {
 		app.depService.lomsClient,
 	)
 
-	err = app.initServer()
+	err = app.initGRPCServer()
 	if err != nil {
 		return nil, fmt.Errorf("failed init server: %w", err)
 	}
@@ -69,26 +67,29 @@ func NewApp() (*application, error) {
 	return &app, nil
 }
 
-func (a *application) initServer() error {
+func (a *application) initGRPCServer() error {
 	var err error
+	a.server, err = server.New(a.config.Server, a.depService.cart)
 
-	a.server, err = server.New(a.config.Server)
-	if err != nil {
-		return err
-	}
-
-	pb.RegisterCartServer(a.server.GRPC, handlerCart.NewHandler(a.depService.cart))
-
-	return nil
+	return err
 }
 
-func (a *application) RunServer() error {
-	return a.server.Run()
+func (a *application) RunGRPCServer() error {
+	return a.server.RunGRPC()
 }
 
-func (a *application) ShutdownServer() error {
+func (a *application) RunHTTPServer() error {
+	return a.server.RunHTTP()
+}
+
+func (a *application) Shutdown() error {
 	if err := a.depService.lomsClient.Close(); err != nil {
 		return nil
 	}
-	return a.server.Shutdown()
+
+	if err := a.server.ShutdownHTTP(); err != nil {
+		return err
+	}
+
+	return a.server.ShutdownGRPC()
 }

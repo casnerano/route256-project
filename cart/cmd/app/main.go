@@ -20,14 +20,20 @@ func main() {
 	}
 
 	go func() {
-		if err = app.RunServer(); err != http.ErrServerClosed {
+		if err = app.RunGRPCServer(); err != http.ErrServerClosed {
+			log.Fatal(fmt.Errorf("failed run server: %w", err))
+		}
+	}()
+
+	go func() {
+		if err = app.RunHTTPServer(); err != http.ErrServerClosed {
 			log.Fatal(fmt.Errorf("failed run server: %w", err))
 		}
 	}()
 
 	<-ctx.Done()
 
-	if err = app.ShutdownServer(); err != nil {
+	if err = app.Shutdown(); err != nil {
 		log.Fatal(fmt.Errorf("failed shutdown server: %w", err))
 	}
 }

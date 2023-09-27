@@ -1,5 +1,6 @@
 server:
-  addr: 0.0.0.0:3200
+  addr_grpc: 0.0.0.0:3200
+  addr_http: 0.0.0.0:8080
 LOMS:
   addr: loms:3200
 PIM:
