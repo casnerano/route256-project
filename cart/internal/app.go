@@ -59,7 +59,7 @@ func NewApp() (*application, error) {
 		app.depService.lomsClient,
 	)
 
-	err = app.initGRPCServer()
+	err = app.init()
 	if err != nil {
 		return nil, fmt.Errorf("failed init server: %w", err)
 	}
@@ -67,7 +67,7 @@ func NewApp() (*application, error) {
 	return &app, nil
 }
 
-func (a *application) initGRPCServer() error {
+func (a *application) init() error {
 	var err error
 	a.server, err = server.New(a.config.Server, a.depService.cart)
 
