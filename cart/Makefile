@@ -8,8 +8,7 @@ PACKAGE=route256/cart/cmd/app
 
 all: format build test lint
 
-#build: bindir .install-bin-deps .vendor-proto build-proto
-build: bindir .install-bin-deps build-proto
+build: bindir .install-bin-deps .vendor-proto build-proto
 	go build -o ${BIN_DIR}/app ${PACKAGE}
 
 test:
