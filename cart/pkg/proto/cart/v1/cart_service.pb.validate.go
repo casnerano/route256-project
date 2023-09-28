@@ -605,10 +605,10 @@ func (m *ItemAddRequest) validate(all bool) error {
 
 	// no validation rules for Sku
 
-	if m.GetCount() < 5 {
+	if m.GetCount() < 1 {
 		err := ItemAddRequestValidationError{
 			field:  "Count",
-			reason: "value must be greater than or equal to 5",
+			reason: "value must be greater than or equal to 1",
 		}
 		if !all {
 			return err

@@ -12,8 +12,8 @@ import (
 )
 
 func (h *Handler) Create(ctx context.Context, in *pb.CreateRequest) (*pb.CreateResponse, error) {
-	if in.GetUser() == 0 && len(in.GetItems()) == 0 {
-		return nil, status.Error(codes.InvalidArgument, codes.InvalidArgument.String())
+	if err := in.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	sCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)

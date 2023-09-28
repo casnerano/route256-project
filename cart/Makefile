@@ -2,13 +2,14 @@ CUR_DIR=$(shell pwd)
 BIN_DIR=${CUR_DIR}/bin
 GO_VERSION=$(shell go version | perl -nle '/(go\d\S+)/; print $$1;')
 SMART_IMPORTS=${BIN_DIR}/smartimports_${GO_VERSION}
-LINTVER=v1.51.1
-LINT_BIN=${BIN_DIR}/lint_${GO_VERSION}_${LINTVER}
+LINT_VER=v1.51.1
+LINT_BIN=${BIN_DIR}/lint_${GO_VERSION}_${LINT_VER}
 PACKAGE=route256/cart/cmd/app
 
 all: format build test lint
 
-build: bindir .install-bin-deps .vendor-proto build-proto
+#build: bindir .install-bin-deps .vendor-proto build-proto
+build: bindir .install-bin-deps build-proto
 	go build -o ${BIN_DIR}/app ${PACKAGE}
 
 test:
@@ -31,7 +32,7 @@ format: install-smartimports
 
 install-lint: bindir
 	test -f ${LINT_BIN} || \
-		(GOBIN=${BIN_DIR} go install github.com/golangci/golangci-lint/cmd/golangci-lint@${LINTVER} && \
+		(GOBIN=${BIN_DIR} go install github.com/golangci/golangci-lint/cmd/golangci-lint@${LINT_VER} && \
 		mv ${BIN_DIR}/golangci-lint ${LINT_BIN})
 
 install-smartimports: bindir

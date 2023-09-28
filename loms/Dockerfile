@@ -1,6 +1,10 @@
 FROM golang:1.21
 
-ADD ./bin/app /app
-ADD ./configs /configs
+WORKDIR /app
 
-CMD ["/app", "-config", "/configs/config.yaml"]
+ADD ./bin/app ./loms
+ADD ./configs ./configs
+ADD ./web ./web
+ADD ./api/v1/openapiv2 ./api/v1/openapiv2
+
+CMD ["/app/loms"]

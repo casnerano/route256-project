@@ -20,13 +20,24 @@ func main() {
 		log.Fatal(err)
 	}
 
+	wg := &sync.WaitGroup{}
+
+	wg.Add(1)
 	go func() {
-		if err = app.RunServer(); err != http.ErrServerClosed {
+		defer wg.Done()
+		if err = app.RunGRPCServer(); err != http.ErrServerClosed {
 			log.Fatal(fmt.Errorf("failed run server: %w", err))
 		}
 	}()
 
-	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err = app.RunHTTPServer(); err != http.ErrServerClosed {
+			log.Fatal(fmt.Errorf("failed run server: %w", err))
+		}
+	}()
+
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -36,9 +47,10 @@ func main() {
 	}()
 
 	<-ctx.Done()
-	wg.Wait()
 
-	if err = app.ShutdownServer(); err != nil {
+	if err = app.Shutdown(); err != nil {
 		log.Fatal(fmt.Errorf("failed shutdown server: %w", err))
 	}
+
+	wg.Wait()
 }

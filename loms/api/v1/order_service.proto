@@ -4,6 +4,33 @@ package route256.loms.api.v1.order;
 
 option go_package = "pkg/proto/order/v1;order";
 
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "validate/validate.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Order service";
+    version: "1.0";
+    contact: {
+      name: "Arutyunyan A.";
+      url: "https://gitlab.ozon.dev/7876010/go-8-middle-project";
+      email: "7876010@mail.ru";
+    }
+  }
+
+  external_docs: {
+    url: "https://gitlab.ozon.dev/7876010/go-8-middle-project/-/tree/main/docs";
+    description: "Detail documentation on services.";
+  }
+
+  schemes: HTTP;
+  schemes: HTTPS;
+
+  consumes: "application/json";
+  produces: "application/json";
+};
+
 message Item {
   uint64 sku = 1;
   uint32 count = 2;
@@ -35,7 +62,7 @@ message InfoResponse {
 
 message CreateRequest {
   uint64 user = 1;
-  repeated Item items = 2;
+  repeated Item items = 2 [(validate.rules).repeated = {min_items: 1}];
 }
 
 message CreateResponse {
@@ -49,8 +76,29 @@ message CancelRequest {
 message CancelResponse { }
 
 service Order {
-  rpc Pay(PayRequest) returns (PayResponse);
-  rpc Info(InfoRequest) returns (InfoResponse);
-  rpc Create(CreateRequest) returns (CreateResponse);
-  rpc Cancel(CancelRequest) returns (CancelResponse);
+  rpc Pay(PayRequest) returns (PayResponse) {
+    option (google.api.http) = {
+      post: "/v1/order/pay",
+      body: "*"
+    };
+  };
+
+  rpc Info(InfoRequest) returns (InfoResponse) {
+    option (google.api.http) = {
+      get: "/v1/order/info/{order_id}"
+    };
+  };
+
+  rpc Create(CreateRequest) returns (CreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/order/create",
+      body: "*"
+    };
+  };
+
+  rpc Cancel(CancelRequest) returns (CancelResponse) {
+    option (google.api.http) = {
+      put: "/v1/order/cancel/{order_id}"
+    };
+  };
 }

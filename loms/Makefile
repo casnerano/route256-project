@@ -1,15 +1,16 @@
-CURDIR=$(shell pwd)
-BINDIR=${CURDIR}/bin
-GOVER=$(shell go version | perl -nle '/(go\d\S+)/; print $$1;')
-SMARTIMPORTS=${BINDIR}/smartimports_${GOVER}
-LINTVER=v1.51.1
-LINTBIN=${BINDIR}/lint_${GOVER}_${LINTVER}
+CUR_DIR=$(shell pwd)
+BIN_DIR=${CUR_DIR}/bin
+GO_VERSION=$(shell go version | perl -nle '/(go\d\S+)/; print $$1;')
+SMART_IMPORTS=${BIN_DIR}/smartimports_${GO_VERSION}
+LINT_VER=v1.51.1
+LINT_BIN=${BIN_DIR}/lint_${GO_VERSION}_${LINT_VER}
 PACKAGE=route256/loms/cmd/app
 
 all: format build test lint
 
-build: bindir build-proto
-	go build -o ${BINDIR}/app ${PACKAGE}
+#build: bindir .install-bin-deps .vendor-proto build-proto
+build: bindir .install-bin-deps build-proto
+	go build -o ${BIN_DIR}/app ${PACKAGE}
 
 test:
 	go test ./...
@@ -18,26 +19,89 @@ run:
 	go run ${PACKAGE}
 
 lint: install-lint
-	${LINTBIN} run
+	${LINT_BIN} run
 
 precommit: format build test lint
 	echo "OK"
 
 bindir:
-	mkdir -p ${BINDIR}
+	mkdir -p ${BIN_DIR}
 
 format: install-smartimports
-	${SMARTIMPORTS} -exclude internal/mocks
+	${SMART_IMPORTS} -exclude internal/mocks
 
 install-lint: bindir
-	test -f ${LINTBIN} || \
-		(GOBIN=${BINDIR} go install github.com/golangci/golangci-lint/cmd/golangci-lint@${LINTVER} && \
-		mv ${BINDIR}/golangci-lint ${LINTBIN})
+	test -f ${LINT_BIN} || \
+		(GOBIN=${BIN_DIR} go install github.com/golangci/golangci-lint/cmd/golangci-lint@${LINT_VER} && \
+		mv ${BIN_DIR}/golangci-lint ${LINT_BIN})
 
 install-smartimports: bindir
-	test -f ${SMARTIMPORTS} || \
-		(GOBIN=${BINDIR} go install github.com/pav5000/smartimports/cmd/smartimports@latest && \
-		mv ${BINDIR}/smartimports ${SMARTIMPORTS})
+	test -f ${SMART_IMPORTS} || \
+		(GOBIN=${BIN_DIR} go install github.com/pav5000/smartimports/cmd/smartimports@latest && \
+		mv ${BIN_DIR}/smartimports ${SMART_IMPORTS})
+
+.install-bin-deps:
+	GOBIN=$(BIN_DIR) go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	GOBIN=$(BIN_DIR) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	GOBIN=$(BIN_DIR) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
+	GOBIN=$(BIN_DIR) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
+	GOBIN=$(BIN_DIR) go install github.com/envoyproxy/protoc-gen-validate@latest
 
 build-proto:
-	protoc --go_out=. --go_opt=paths=import --go-grpc_out=. --go-grpc_opt=paths=import api/v1/*.proto
+	mkdir -p api/v1/openapiv2
+	protoc \
+		--proto_path=vendor-proto \
+		--proto_path=api/v1 \
+		--plugin=protoc-gen-go=${BIN_DIR}/protoc-gen-go --go_out="." --go_opt="paths=import" \
+		--plugin=protoc-gen-go-grpc=${BIN_DIR}/protoc-gen-go-grpc --go-grpc_out="." --go-grpc_opt="paths=import" \
+		--plugin=protoc-gen-openapiv2=${BIN_DIR}/protoc-gen-openapiv2 --openapiv2_out="api/v1/openapiv2" --openapiv2_opt="logtostderr=true,allow_merge=true,merge_file_name=loms" \
+		--plugin=protoc-gen-grpc-gateway=$(BIN_DIR)/protoc-gen-grpc-gateway --grpc-gateway_out="." --grpc-gateway_opt="logtostderr=true" --grpc-gateway_opt="paths=import" --grpc-gateway_opt="generate_unbound_methods=true" \
+		--plugin=protoc-gen-validate=$(BIN_DIR)/protoc-gen-validate --validate_out="lang=go,paths=import:." \
+		api/v1/*.proto
+	go mod tidy
+
+
+.vendor-rm:
+	rm -rf vendor-proto
+
+.vendor-proto: .vendor-rm vendor-proto/google/api vendor-proto/google/protobuf vendor-proto/protoc-gen-openapiv2/options vendor-proto/validate
+
+vendor-proto/google/api:
+	git clone -b master --single-branch -n --depth=1 --filter=tree:0 \
+ 		https://github.com/googleapis/googleapis vendor-proto/googleapis && \
+ 	cd vendor-proto/googleapis && \
+	git sparse-checkout set --no-cone google/api && \
+	git checkout
+	mkdir -p  vendor-proto/google
+	mv vendor-proto/googleapis/google/api vendor-proto/google
+	rm -rf vendor-proto/googleapis
+
+vendor-proto/protoc-gen-openapiv2/options:
+	git clone -b main --single-branch -n --depth=1 --filter=tree:0 \
+ 		https://github.com/grpc-ecosystem/grpc-gateway vendor-proto/grpc-ecosystem && \
+ 	cd vendor-proto/grpc-ecosystem && \
+	git sparse-checkout set --no-cone protoc-gen-openapiv2/options && \
+	git checkout
+	mkdir -p vendor-proto/protoc-gen-openapiv2
+	mv vendor-proto/grpc-ecosystem/protoc-gen-openapiv2/options vendor-proto/protoc-gen-openapiv2
+	rm -rf vendor-proto/grpc-ecosystem
+
+vendor-proto/google/protobuf:
+	git clone -b main --single-branch -n --depth=1 --filter=tree:0 \
+		https://github.com/protocolbuffers/protobuf vendor-proto/protobuf &&\
+	cd vendor-proto/protobuf &&\
+	git sparse-checkout set --no-cone src/google/protobuf &&\
+	git checkout
+	mkdir -p vendor-proto/google
+	mv vendor-proto/protobuf/src/google/protobuf vendor-proto/google
+	rm -rf vendor-proto/protobuf
+
+vendor-proto/validate:
+	git clone -b main --single-branch --depth=2 --filter=tree:0 \
+		https://github.com/bufbuild/protoc-gen-validate vendor-proto/tmp && \
+		cd vendor-proto/tmp && \
+		git sparse-checkout set --no-cone validate &&\
+		git checkout
+		mkdir -p vendor-proto/validate
+		mv vendor-proto/tmp/validate vendor-proto/
+		rm -rf vendor-proto/tmp

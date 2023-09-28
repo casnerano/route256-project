@@ -7,12 +7,8 @@ import (
 	"route256/loms/internal/repository"
 	"route256/loms/internal/repository/memstore"
 	"route256/loms/internal/server"
-	orderHandler "route256/loms/internal/server/handler/order"
-	stockHandler "route256/loms/internal/server/handler/stock"
 	"route256/loms/internal/service/order"
 	"route256/loms/internal/service/stock"
-	pbOrder "route256/loms/pkg/proto/order/v1"
-	pbStock "route256/loms/pkg/proto/stock/v1"
 	"time"
 )
 
@@ -68,7 +64,7 @@ func NewApp() (*application, error) {
 		),
 	}
 
-	err = app.initServer()
+	err = app.init()
 	if err != nil {
 		return nil, fmt.Errorf("failed init server: %w", err)
 	}
@@ -76,26 +72,27 @@ func NewApp() (*application, error) {
 	return &app, nil
 }
 
-func (a *application) initServer() error {
+func (a *application) init() error {
 	var err error
+	a.server, err = server.New(a.config.Server, a.depService.order, a.depService.stock)
 
-	a.server, err = server.New(a.config.Server)
-	if err != nil {
+	return err
+}
+
+func (a *application) RunGRPCServer() error {
+	return a.server.RunGRPC()
+}
+
+func (a *application) RunHTTPServer() error {
+	return a.server.RunHTTP()
+}
+
+func (a *application) Shutdown() error {
+	if err := a.server.ShutdownHTTP(); err != nil {
 		return err
 	}
 
-	pbOrder.RegisterOrderServer(a.server.GRPC, orderHandler.NewHandler(a.depService.order))
-	pbStock.RegisterStockServer(a.server.GRPC, stockHandler.NewHandler(a.depService.stock))
-
-	return nil
-}
-
-func (a *application) RunServer() error {
-	return a.server.Run()
-}
-
-func (a *application) ShutdownServer() error {
-	return a.server.Shutdown()
+	return a.server.ShutdownGRPC()
 }
 
 func (a *application) RunCancelUnpaidOrderWorker(ctx context.Context) error {

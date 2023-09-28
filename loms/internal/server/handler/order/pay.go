@@ -11,8 +11,8 @@ import (
 )
 
 func (h *Handler) Pay(ctx context.Context, in *pb.PayRequest) (*pb.PayResponse, error) {
-	if in.GetOrderId() == 0 {
-		return nil, status.Error(codes.InvalidArgument, codes.InvalidArgument.String())
+	if err := in.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	sCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)

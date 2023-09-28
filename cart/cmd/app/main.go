@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os/signal"
 	"route256/cart/internal"
+	"sync"
 	"syscall"
 )
 
@@ -19,13 +20,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	wg := &sync.WaitGroup{}
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		if err = app.RunGRPCServer(); err != http.ErrServerClosed {
 			log.Fatal(fmt.Errorf("failed run server: %w", err))
 		}
 	}()
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		if err = app.RunHTTPServer(); err != http.ErrServerClosed {
 			log.Fatal(fmt.Errorf("failed run server: %w", err))
 		}
@@ -36,4 +43,6 @@ func main() {
 	if err = app.Shutdown(); err != nil {
 		log.Fatal(fmt.Errorf("failed shutdown server: %w", err))
 	}
+
+	wg.Wait()
 }
