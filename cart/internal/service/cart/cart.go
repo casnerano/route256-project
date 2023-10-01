@@ -99,8 +99,10 @@ func (c *Cart) List(ctx context.Context, userID model.UserID) ([]*model.ItemDeta
 		}
 
 		detailList = append(detailList, &model.ItemDetail{
-			SKU:   list[k].SKU,
-			Count: list[k].Count,
+			Item: model.Item{
+				SKU:   list[k].SKU,
+				Count: list[k].Count,
+			},
 			Price: productInfo.Price,
 			Name:  productInfo.Name,
 		})
