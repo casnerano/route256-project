@@ -20,7 +20,7 @@ func (s Handler) ItemAdd(ctx context.Context, in *pb.ItemAddRequest) (*pb.ItemAd
 	sCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 
-	err := s.service.Add(sCtx, in.GetUser(), in.GetSku(), in.GetCount())
+	_, err := s.service.Add(sCtx, in.GetUser(), in.GetSku(), in.GetCount())
 	if err != nil {
 		if errors.Is(err, cartService.ErrPIMProductNotFound) || errors.Is(err, cartService.ErrPIMLowAvailability) {
 			return nil, status.Error(codes.Unknown, err.Error())

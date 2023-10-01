@@ -37,31 +37,26 @@ func New(rep repository.Cart, pim PIMClient, loms LOMSClient) *Cart {
 	}
 }
 
-func (c *Cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint32) error {
+func (c *Cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint32) (*model.Item, error) {
 	_, err := c.pim.GetProductInfo(ctx, sku)
 	if err != nil {
 		if errors.Is(err, pim.ErrProductNotFound) {
-			return ErrPIMProductNotFound
+			return nil, ErrPIMProductNotFound
 		}
 
-		return err
+		return nil, err
 	}
 
 	available, err := c.loms.GetStockInfo(ctx, sku)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if count > available {
-		return ErrPIMLowAvailability
+		return nil, ErrPIMLowAvailability
 	}
 
-	cartItem := model.Item{
-		SKU:   sku,
-		Count: count,
-	}
-
-	return c.rep.Add(ctx, userID, &cartItem)
+	return c.rep.Add(ctx, userID, sku, count)
 }
 
 func (c *Cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) error {
