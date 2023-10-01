@@ -2,58 +2,32 @@ package order
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"log"
-	"net/http"
-	"route256/loms/internal/model"
-	"route256/loms/internal/server/handler"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	orderService "route256/loms/internal/service/order"
-	"runtime/debug"
+	pb "route256/loms/pkg/proto/order/v1"
 	"time"
 )
 
-type payRequest struct {
-	OrderID model.OrderID `json:"orderID"`
-}
-
-func (p *payRequest) valid() bool {
-	return p.OrderID != 0
-}
-
-type payResponse struct{}
-
-func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			log.Printf("Failed close request body: %s\n", debug.Stack())
-		}
-	}()
-
-	payRequestStruct := payRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&payRequestStruct); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+func (h *Handler) Pay(ctx context.Context, in *pb.PayRequest) (*pb.PayResponse, error) {
+	if err := in.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if !payRequestStruct.valid() {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
+	sCtx, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
 	defer cancel()
 
-	err := h.service.Payment(ctx, payRequestStruct.OrderID)
+	err := h.service.Payment(sCtx, in.GetOrderId())
 	if err != nil {
 		if errors.Is(err, orderService.ErrNotFound) || errors.Is(err, orderService.ErrShipReserve) {
-			handler.WriteResponseError(w, 0, err.Error())
-			return
+			return nil, status.Error(codes.Unknown, err.Error())
 		}
 
-		handler.WriteInternalError(w, err)
-		return
+		return nil, status.Error(codes.Internal, codes.Internal.String())
 	}
 
-	handler.WriteResponse(w, payResponse{})
+	response := &pb.PayResponse{}
+
+	return response, nil
 }

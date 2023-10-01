@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package route256.loms.api.v1.stock;
+
+option go_package = "pkg/proto/stock/v1;stock";
+
+import "google/api/annotations.proto";
+
+message InfoRequest {
+  uint64 sku = 1;
+}
+
+message InfoResponse {
+  uint32 count = 1;
+}
+
+service Stock {
+  rpc Info (InfoRequest) returns (InfoResponse) {
+    option (google.api.http) = {
+      get: "/v1/stock/info/{sku}"
+    };
+  };
+}

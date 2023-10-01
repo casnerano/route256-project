@@ -1,124 +1,65 @@
 package loms
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-	"net/url"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"route256/cart/internal/model"
-	"runtime/debug"
+	pbOrder "route256/loms/pkg/proto/order/v1"
+	pbStock "route256/loms/pkg/proto/stock/v1"
 )
 
 type Client struct {
-	baseURL string
+	grpcConn    *grpc.ClientConn
+	stockClient pbStock.StockClient
+	orderClient pbOrder.OrderClient
 }
 
-func NewClient(baseURL string) *Client {
-	return &Client{baseURL: baseURL}
-}
-
-func (c *Client) GetStockInfo(ctx context.Context, sku model.SKU) (uint64, error) {
-	path, err := url.JoinPath(c.baseURL, "/api/stock/info")
-	if err != nil {
-		return 0, err
-	}
-
-	requestPayload := GetStockInfoRequest{SKU: sku}
-
-	bRequestPayload, err := json.Marshal(requestPayload)
-
-	if err != nil {
-		return 0, err
-	}
-
-	request, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		path,
-		bytes.NewReader(bRequestPayload),
+func NewClient(addr string) (*Client, error) {
+	grpcConn, err := grpc.Dial(
+		addr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	response, err := http.DefaultClient.Do(request)
+	return &Client{
+		grpcConn:    grpcConn,
+		stockClient: pbStock.NewStockClient(grpcConn),
+		orderClient: pbOrder.NewOrderClient(grpcConn),
+	}, nil
+}
+
+func (c *Client) GetStockInfo(ctx context.Context, sku model.SKU) (uint32, error) {
+	infoResponse, err := c.stockClient.Info(ctx, &pbStock.InfoRequest{Sku: sku})
 	if err != nil {
-		return 0, fmt.Errorf("failed request product stock info: %w", err)
-	}
-
-	defer func() {
-		if err = response.Body.Close(); err != nil {
-			log.Printf("Failed close response body: %s\n", debug.Stack())
-		}
-	}()
-
-	if response.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("failed request, server returned response code %d", response.StatusCode)
-	}
-
-	responsePayload := GetStockInfoResponse{}
-	if err = json.NewDecoder(response.Body).Decode(&responsePayload); err != nil {
 		return 0, err
 	}
 
-	return responsePayload.Count, nil
+	return infoResponse.GetCount(), nil
 }
 
 func (c *Client) CreateOrder(ctx context.Context, userID model.UserID, items []*model.Item) (model.OrderID, error) {
-	path, err := url.JoinPath(c.baseURL, "/api/order/create")
-	if err != nil {
-		return 0, err
-	}
-
-	requestPayload := CreateOrderRequest{
-		User: userID,
-	}
-
+	pbItems := make([]*pbOrder.Item, 0)
 	for _, item := range items {
-		requestPayload.Items = append(requestPayload.Items, &CreateOrderItem{
-			SKU:   item.SKU,
+		pbItems = append(pbItems, &pbOrder.Item{
+			Sku:   item.SKU,
 			Count: item.Count,
 		})
 	}
 
-	bRequestPayload, err := json.Marshal(requestPayload)
-
+	createResponse, err := c.orderClient.Create(ctx, &pbOrder.CreateRequest{
+		User:  userID,
+		Items: pbItems,
+	})
 	if err != nil {
 		return 0, err
 	}
 
-	request, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		path,
-		bytes.NewReader(bRequestPayload),
-	)
-	if err != nil {
-		return 0, err
-	}
+	return createResponse.GetOrderId(), nil
+}
 
-	response, err := http.DefaultClient.Do(request)
-	if err != nil {
-		return 0, fmt.Errorf("failed request create order: %w", err)
-	}
-
-	defer func() {
-		if err = response.Body.Close(); err != nil {
-			log.Printf("Failed close response body: %s\n", debug.Stack())
-		}
-	}()
-
-	if response.StatusCode != http.StatusOK {
-		return 0, fmt.Errorf("failed request, server returned response code %d", response.StatusCode)
-	}
-
-	responsePayload := CreateOrderResponse{}
-	if err = json.NewDecoder(response.Body).Decode(&responsePayload); err != nil {
-		return 0, err
-	}
-
-	return responsePayload.OrderID, nil
+func (c *Client) Close() error {
+	return c.grpcConn.Close()
 }

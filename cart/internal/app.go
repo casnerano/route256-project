@@ -41,9 +41,16 @@ func NewApp() (*application, error) {
 		cart: memstore.NewCartRepository(),
 	}
 
+	pimClient := pim.NewClient(app.config.PIM.Addr)
+
+	lomsClient, err := loms.NewClient(app.config.LOMS.Addr)
+	if err != nil {
+		return nil, err
+	}
+
 	app.depService = &depService{
-		pimClient:  pim.NewClient(app.config.PIM.Addr),
-		lomsClient: loms.NewClient(app.config.LOMS.Addr),
+		pimClient:  pimClient,
+		lomsClient: lomsClient,
 	}
 
 	app.depService.cart = cart.New(
@@ -52,7 +59,7 @@ func NewApp() (*application, error) {
 		app.depService.lomsClient,
 	)
 
-	err = app.initServer()
+	err = app.init()
 	if err != nil {
 		return nil, fmt.Errorf("failed init server: %w", err)
 	}
@@ -60,23 +67,29 @@ func NewApp() (*application, error) {
 	return &app, nil
 }
 
-func (a *application) initServer() error {
+func (a *application) init() error {
 	var err error
-	a.server, err = server.New(
-		a.config.Server,
-		a.depService.cart,
-	)
-	if err != nil {
+	a.server, err = server.New(a.config.Server, a.depService.cart)
+
+	return err
+}
+
+func (a *application) RunGRPCServer() error {
+	return a.server.RunGRPC()
+}
+
+func (a *application) RunHTTPServer() error {
+	return a.server.RunHTTP()
+}
+
+func (a *application) Shutdown() error {
+	if err := a.depService.lomsClient.Close(); err != nil {
+		return nil
+	}
+
+	if err := a.server.ShutdownHTTP(); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (a *application) RunServer() error {
-	return a.server.Run()
-}
-
-func (a *application) ShutdownServer() error {
-	return a.server.Shutdown()
+	return a.server.ShutdownGRPC()
 }

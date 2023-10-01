@@ -1,4 +1,5 @@
 server:
-  addr: :8080
+  addr_grpc: 0.0.0.0:3200
+  addr_http: 0.0.0.0:8080
 order:
   cancel_unpaid_timeout: 600

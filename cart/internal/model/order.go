@@ -1,3 +1,3 @@
 package model
 
-type OrderID = int64
+type OrderID = uint64

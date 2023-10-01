@@ -38,7 +38,7 @@ func (rep *stockRepository) FindBySKU(_ context.Context, sku model.SKU) (*model.
 	return nil, repository.ErrNotFound
 }
 
-func (rep *stockRepository) AddReserve(_ context.Context, sku model.SKU, count uint16) error {
+func (rep *stockRepository) AddReserve(_ context.Context, sku model.SKU, count uint32) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -58,7 +58,7 @@ func (rep *stockRepository) AddReserve(_ context.Context, sku model.SKU, count u
 	return repository.ErrNotFound
 }
 
-func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, count uint16) error {
+func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, count uint32) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -78,7 +78,7 @@ func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, coun
 	return repository.ErrNotFound
 }
 
-func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count uint16) error {
+func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count uint32) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -100,7 +100,7 @@ func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count 
 func (rep *stockRepository) setFixtureIfNotExist(sku model.SKU) {
 	if _, ok := rep.store[sku]; !ok {
 		rep.store[sku] = &model.Stock{
-			Available: uint16(rand.Uint32() % 100),
+			Available: rand.Uint32() % 100,
 			Reserved:  0,
 		}
 	}

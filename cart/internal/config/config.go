@@ -14,12 +14,14 @@ const defaultFilename = "./configs/config.yaml"
 var yamlFilename string
 
 type Server struct {
-	Addr string `yaml:"addr"`
+	AddrGRPC string `yaml:"addr_grpc"`
+	AddrHTTP string `yaml:"addr_http"`
 }
 
 type Config struct {
-	Server Server `yaml:"server"`
-	LOMS   struct {
+	Server              Server `yaml:"server"`
+	HTTPReversProxyAddr string `yaml:"http_revers_proxy_addr"`
+	LOMS                struct {
 		Addr string `yaml:"addr"`
 	} `yaml:"LOMS"`
 	PIM struct {
@@ -40,8 +42,9 @@ func New() (*Config, error) {
 }
 
 func (c *Config) SetDefaultValues() {
-	c.Server.Addr = ":8080"
-	c.LOMS.Addr = "http://loms:8080"
+	c.Server.AddrGRPC = "0.0.0.0:3200"
+	c.Server.AddrHTTP = "0.0.0.0:8080"
+	c.LOMS.Addr = "loms:3200"
 	c.PIM.Addr = "http://route256.pavl.uk:8080"
 }
 

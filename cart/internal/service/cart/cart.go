@@ -19,7 +19,7 @@ type PIMClient interface {
 }
 
 type LOMSClient interface {
-	GetStockInfo(ctx context.Context, sku model.SKU) (uint64, error)
+	GetStockInfo(ctx context.Context, sku model.SKU) (uint32, error)
 	CreateOrder(ctx context.Context, userID model.UserID, items []*model.Item) (model.OrderID, error)
 }
 
@@ -37,7 +37,7 @@ func New(rep repository.Cart, pim PIMClient, loms LOMSClient) *Cart {
 	}
 }
 
-func (c *Cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint16) error {
+func (c *Cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint32) error {
 	_, err := c.pim.GetProductInfo(ctx, sku)
 	if err != nil {
 		if errors.Is(err, pim.ErrProductNotFound) {
@@ -52,7 +52,7 @@ func (c *Cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, coun
 		return err
 	}
 
-	if uint64(count) > available {
+	if count > available {
 		return ErrPIMLowAvailability
 	}
 

@@ -2,82 +2,44 @@ package cart
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"log"
-	"net/http"
-	"route256/cart/internal/model"
-	"route256/cart/internal/server/handler"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	cartService "route256/cart/internal/service/cart"
-	"runtime/debug"
+	pb "route256/cart/pkg/proto/cart/v1"
 	"time"
 )
 
-type listRequest struct {
-	User model.UserID `json:"user"`
-}
+func (s Handler) List(ctx context.Context, in *pb.ListRequest) (*pb.ListResponse, error) {
+	response := &pb.ListResponse{}
 
-func (l *listRequest) valid() bool {
-	return l.User != 0
-}
-
-type listItemResponse struct {
-	SKU   model.SKU `json:"sku"`
-	Count uint16    `json:"count"`
-	Name  string    `json:"name"`
-	Price uint32    `json:"price"`
-}
-
-type listResponse struct {
-	Items      []*listItemResponse `json:"items"`
-	TotalPrice uint32              `json:"totalPrice"`
-}
-
-func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			log.Printf("Failed close request body: %s\n", debug.Stack())
-		}
-	}()
-
-	listRequestStruct := listRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&listRequestStruct); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	if err := in.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if !listRequestStruct.valid() {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Second)
+	sCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 
-	list, err := h.service.List(ctx, listRequestStruct.User)
+	list, err := s.service.List(sCtx, in.GetUser())
 	if err != nil {
 		if errors.Is(err, cartService.ErrNotFound) {
-			handler.WriteResponse(w, listResponse{})
-			return
+			return response, nil
 		}
 
-		handler.WriteInternalError(w, err)
-		return
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	var response listResponse
-
 	for key := range list {
-		item := listItemResponse{
-			SKU:   list[key].SKU,
+		item := pb.ListItem{
+			Sku:   list[key].SKU,
 			Count: list[key].Count,
 			Name:  list[key].Name,
 			Price: list[key].Price,
 		}
 
 		response.Items = append(response.Items, &item)
-		response.TotalPrice += item.Price * uint32(item.Count)
+		response.TotalPrice += uint64(item.Price * item.Count)
 	}
 
-	handler.WriteResponse(w, response)
+	return response, nil
 }

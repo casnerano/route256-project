@@ -2,55 +2,32 @@ package cart
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"log"
-	"net/http"
-	"route256/cart/internal/model"
-	"route256/cart/internal/server/handler"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	cartService "route256/cart/internal/service/cart"
-	"runtime/debug"
+	pb "route256/cart/pkg/proto/cart/v1"
 	"time"
 )
 
-type clearRequest struct {
-	User model.UserID `json:"user"`
-}
+func (s Handler) Clear(ctx context.Context, in *pb.ClearRequest) (*pb.ClearResponse, error) {
+	response := &pb.ClearResponse{}
 
-func (c *clearRequest) valid() bool {
-	return c.User != 0
-}
-
-func (h *Handler) Clear(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			log.Printf("Failed close request body: %s\n", debug.Stack())
-		}
-	}()
-
-	clearRequestStruct := clearRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&clearRequestStruct); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	if err := in.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if !clearRequestStruct.valid() {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 1*time.Second)
+	sCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 
-	if err := h.service.Clear(ctx, clearRequestStruct.User); err != nil {
+	err := s.service.Clear(sCtx, in.GetUser())
+	if err != nil {
 		if errors.Is(err, cartService.ErrNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			return
+			return nil, status.Error(codes.NotFound, codes.NotFound.String())
 		}
 
-		handler.WriteInternalError(w, err)
-		return
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return response, nil
 }

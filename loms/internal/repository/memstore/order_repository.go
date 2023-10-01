@@ -13,7 +13,7 @@ type orderStorage = map[model.OrderID]*model.Order
 type orderRepository struct {
 	mu      *sync.RWMutex
 	store   orderStorage
-	counter int64
+	counter uint64
 }
 
 func NewOrderRepository() repository.Order {

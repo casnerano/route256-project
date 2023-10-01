@@ -1,0 +1,112 @@
+syntax = "proto3";
+
+package route256.cart.api.v1;
+
+option go_package = "pkg/proto/cart/v1;cart";
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "validate/validate.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Cart service";
+    version: "1.0";
+    contact: {
+      name: "Arutyunyan A.";
+      url: "https://gitlab.ozon.dev/7876010/go-8-middle-project";
+      email: "7876010@mail.ru";
+    }
+  }
+
+  external_docs: {
+    url: "https://gitlab.ozon.dev/7876010/go-8-middle-project/-/tree/main/docs";
+    description: "Detail documentation on services.";
+  }
+
+  schemes: HTTP;
+  schemes: HTTPS;
+
+  consumes: "application/json";
+  produces: "application/json";
+};
+
+message ListItem {
+  uint64 sku = 1;
+  uint32 count = 2;
+  string name = 3;
+  uint32 price = 4;
+}
+
+message ListRequest {
+  uint64 user = 1;
+}
+
+message ListResponse {
+  repeated ListItem items = 1;
+  uint64 total_price = 2;
+}
+
+message ClearRequest {
+  uint64 user = 1;
+}
+
+message ClearResponse {}
+
+message ItemAddRequest {
+  uint64 user = 1;
+  uint64 sku = 2;
+  uint32 count = 3 [(validate.rules).uint32.gte = 1];
+}
+
+message ItemAddResponse {}
+
+message ItemDeleteRequest {
+  uint64 user = 1;
+  uint64 sku = 2;
+}
+
+message ItemDeleteResponse {}
+
+message CheckoutRequest {
+  uint64 user = 1;
+}
+
+message CheckoutResponse {
+  uint64 order_id = 1;
+}
+
+service Cart {
+  rpc List (ListRequest) returns (ListResponse) {
+    option (google.api.http) = {
+      get: "/v1/cart/list/{user}"
+    };
+  };
+
+  rpc Clear (ClearRequest) returns (ClearResponse) {
+    option (google.api.http) = {
+      get: "/v1/cart/clear/{user}"
+    };
+  };
+
+  rpc ItemAdd (ItemAddRequest) returns (ItemAddResponse) {
+    option (google.api.http) = {
+      post: "/v1/cart/item",
+      body: "*"
+    };
+  };
+
+  rpc ItemDelete (ItemDeleteRequest) returns (ItemDeleteResponse) {
+    option (google.api.http) = {
+      delete: "/v1/cart/item/{user}/{sku}"
+    };
+  };
+
+  rpc Checkout (CheckoutRequest) returns (CheckoutResponse) {
+    option (google.api.http) = {
+      post: "/v1/cart/checkout",
+      body: "*"
+    };
+  };
+}
+

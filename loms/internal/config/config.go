@@ -14,7 +14,8 @@ const defaultFilename = "./configs/config.yaml"
 var yamlFilename string
 
 type Server struct {
-	Addr string `yaml:"addr"`
+	AddrGRPC string `yaml:"addr_grpc"`
+	AddrHTTP string `yaml:"addr_http"`
 }
 
 type Order struct {
@@ -39,7 +40,8 @@ func New() (*Config, error) {
 }
 
 func (c *Config) SetDefaultValues() {
-	c.Server.Addr = ":8080"
+	c.Server.AddrGRPC = "0.0.0.0:3200"
+	c.Server.AddrHTTP = "0.0.0.0:8080"
 	c.Order.CancelUnpaidTimeout = 600
 }
 

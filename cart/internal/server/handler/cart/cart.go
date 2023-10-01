@@ -3,10 +3,11 @@ package cart
 import (
 	"context"
 	"route256/cart/internal/model"
+	pb "route256/cart/pkg/proto/cart/v1"
 )
 
 type Service interface {
-	Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint16) error
+	Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint32) error
 	Delete(ctx context.Context, userID model.UserID, sku model.SKU) error
 	List(ctx context.Context, userID model.UserID) ([]*model.ItemDetail, error)
 	Clear(ctx context.Context, userID model.UserID) error
@@ -14,6 +15,7 @@ type Service interface {
 }
 
 type Handler struct {
+	pb.UnimplementedCartServer
 	service Service
 }
 

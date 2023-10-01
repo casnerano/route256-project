@@ -64,7 +64,7 @@ func NewApp() (*application, error) {
 		),
 	}
 
-	err = app.initServer()
+	err = app.init()
 	if err != nil {
 		return nil, fmt.Errorf("failed init server: %w", err)
 	}
@@ -72,26 +72,27 @@ func NewApp() (*application, error) {
 	return &app, nil
 }
 
-func (a *application) initServer() error {
+func (a *application) init() error {
 	var err error
-	a.server, err = server.New(
-		a.config.Server,
-		a.depService.order,
-		a.depService.stock,
-	)
-	if err != nil {
+	a.server, err = server.New(a.config.Server, a.depService.order, a.depService.stock)
+
+	return err
+}
+
+func (a *application) RunGRPCServer() error {
+	return a.server.RunGRPC()
+}
+
+func (a *application) RunHTTPServer() error {
+	return a.server.RunHTTP()
+}
+
+func (a *application) Shutdown() error {
+	if err := a.server.ShutdownHTTP(); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (a *application) RunServer() error {
-	return a.server.Run()
-}
-
-func (a *application) ShutdownServer() error {
-	return a.server.Shutdown()
+	return a.server.ShutdownGRPC()
 }
 
 func (a *application) RunCancelUnpaidOrderWorker(ctx context.Context) error {

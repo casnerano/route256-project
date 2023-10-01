@@ -2,105 +2,54 @@ package cart
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"log"
-	"net/http"
-	"route256/cart/internal/model"
-	"route256/cart/internal/server/handler"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	cartService "route256/cart/internal/service/cart"
-	"runtime/debug"
+	pb "route256/cart/pkg/proto/cart/v1"
 	"time"
 )
 
-type itemAddRequest struct {
-	User  model.UserID `json:"user"`
-	SKU   model.SKU    `json:"sku"`
-	Count uint16       `json:"count"`
-}
+func (s Handler) ItemAdd(ctx context.Context, in *pb.ItemAddRequest) (*pb.ItemAddResponse, error) {
+	response := &pb.ItemAddResponse{}
 
-func (i *itemAddRequest) valid() bool {
-	return i.User != 0 && i.SKU != 0 && i.Count != 0
-}
-
-type itemDeleteRequest struct {
-	User model.UserID `json:"user"`
-	SKU  model.SKU    `json:"sku"`
-}
-
-func (i *itemDeleteRequest) valid() bool {
-	return i.User != 0 && i.SKU != 0
-}
-
-func (h *Handler) Add(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			log.Printf("Failed close request body: %s\n", debug.Stack())
-		}
-	}()
-
-	itemAddRequestStruct := itemAddRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&itemAddRequestStruct); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	if err := in.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if !itemAddRequestStruct.valid() {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
+	sCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 
-	if err := h.service.Add(
-		ctx,
-		itemAddRequestStruct.User,
-		itemAddRequestStruct.SKU,
-		itemAddRequestStruct.Count,
-	); err != nil {
+	err := s.service.Add(sCtx, in.GetUser(), in.GetSku(), in.GetCount())
+	if err != nil {
 		if errors.Is(err, cartService.ErrPIMProductNotFound) || errors.Is(err, cartService.ErrPIMLowAvailability) {
-			handler.WriteResponseError(w, 0, err.Error())
-			return
+			return nil, status.Error(codes.Unknown, err.Error())
 		}
 
-		handler.WriteInternalError(w, err)
-		return
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return response, nil
 }
 
-func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		if err := r.Body.Close(); err != nil {
-			log.Printf("Failed close request body: %s\n", debug.Stack())
-		}
-	}()
+func (s Handler) ItemDelete(ctx context.Context, in *pb.ItemDeleteRequest) (*pb.ItemDeleteResponse, error) {
+	response := &pb.ItemDeleteResponse{}
 
-	itemDeleteRequestStruct := itemDeleteRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&itemDeleteRequestStruct); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	if err := in.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if !itemDeleteRequestStruct.valid() {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 300*time.Millisecond)
+	sCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 
-	if err := h.service.Delete(ctx, itemDeleteRequestStruct.User, itemDeleteRequestStruct.SKU); err != nil {
+	err := s.service.Delete(sCtx, in.GetUser(), in.GetSku())
+	if err != nil {
 		if errors.Is(err, cartService.ErrNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			return
+			return nil, status.Error(codes.NotFound, codes.NotFound.String())
 		}
 
-		handler.WriteInternalError(w, err)
-		return
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return response, nil
 }
