@@ -1,7 +1,9 @@
 server:
   addr_grpc: 0.0.0.0:3200
   addr_http: 0.0.0.0:8080
-LOMS:
+database:
+  dsn: "postgres://user:password@localhost/seckeep?sslmode=disable"
+loms:
   addr: loms:3200
-PIM:
+pim:
   addr: http://route256.pavl.uk:8080
