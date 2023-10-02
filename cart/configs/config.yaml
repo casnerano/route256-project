@@ -2,7 +2,7 @@ server:
   addr_grpc: 0.0.0.0:3200
   addr_http: 0.0.0.0:8080
 database:
-  dsn: "postgres://user:password@localhost/seckeep?sslmode=disable"
+  dsn: "postgres://user:password@postgres/cart?sslmode=disable"
 loms:
   addr: loms:3200
 pim:

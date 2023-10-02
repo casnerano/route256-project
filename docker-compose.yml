@@ -39,7 +39,7 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./infrastructure/postgres/initdb:/docker-entrypoint-initdb.d
     healthcheck:
-      test: "pg_isready"
+      test: "pg_isready -d ${POSTGRES_DB_CART} -U ${POSTGRES_USER} && \ pg_isready -d ${POSTGRES_DB_LOMS} -U ${POSTGRES_USER}"
       interval: 5s
       timeout: 3s
     networks:
