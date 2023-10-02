@@ -3,11 +3,12 @@ package cart
 import (
 	"context"
 	"errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	cartService "route256/cart/internal/service/cart"
 	pb "route256/cart/pkg/proto/cart/v1"
 	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s Handler) List(ctx context.Context, in *pb.ListRequest) (*pb.ListResponse, error) {

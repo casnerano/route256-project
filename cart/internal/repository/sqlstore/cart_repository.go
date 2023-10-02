@@ -2,9 +2,10 @@ package sqlstore
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"route256/cart/internal/model"
 	"route256/cart/internal/repository"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type cartRepository struct {

@@ -2,10 +2,6 @@ package server
 
 import (
 	"context"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/reflection"
 	"net"
 	"net/http"
 	"route256/cart/internal/config"
@@ -13,6 +9,11 @@ import (
 	handlerCart "route256/cart/internal/server/handler/cart"
 	pb "route256/cart/pkg/proto/cart/v1"
 	"time"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 )
 
 type service interface {
