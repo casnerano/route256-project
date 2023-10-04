@@ -40,6 +40,7 @@ install-smartimports: bindir
 		mv ${BIN_DIR}/smartimports ${SMART_IMPORTS})
 
 .install-bin-deps:
+	GOBIN=$(BIN_DIR) go install github.com/pressly/goose/v3/cmd/goose@latest
 	GOBIN=$(BIN_DIR) go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	GOBIN=$(BIN_DIR) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	GOBIN=$(BIN_DIR) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
@@ -104,3 +105,9 @@ vendor-proto/validate:
 		mkdir -p vendor-proto/validate
 		mv vendor-proto/tmp/validate vendor-proto/
 		rm -rf vendor-proto/tmp
+
+status-migrations:
+	$(BIN_DIR)/goose -dir ./migrations/postgres postgres postgres://user:password@localhost/cart?sslmode=disable status
+
+load-migrations:
+	$(BIN_DIR)/goose -dir ./migrations/postgres postgres postgres://user:password@localhost/cart?sslmode=disable up
