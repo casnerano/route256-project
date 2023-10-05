@@ -3,11 +3,12 @@ package cart
 import (
 	"context"
 	"errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	cartService "route256/cart/internal/service/cart"
 	pb "route256/cart/pkg/proto/cart/v1"
 	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (s Handler) ItemAdd(ctx context.Context, in *pb.ItemAddRequest) (*pb.ItemAddResponse, error) {
@@ -20,7 +21,7 @@ func (s Handler) ItemAdd(ctx context.Context, in *pb.ItemAddRequest) (*pb.ItemAd
 	sCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 
-	err := s.service.Add(sCtx, in.GetUser(), in.GetSku(), in.GetCount())
+	_, err := s.service.Add(sCtx, in.GetUser(), in.GetSku(), in.GetCount())
 	if err != nil {
 		if errors.Is(err, cartService.ErrPIMProductNotFound) || errors.Is(err, cartService.ErrPIMLowAvailability) {
 			return nil, status.Error(codes.Unknown, err.Error())

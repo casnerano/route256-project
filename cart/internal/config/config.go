@@ -19,14 +19,16 @@ type Server struct {
 }
 
 type Config struct {
-	Server              Server `yaml:"server"`
-	HTTPReversProxyAddr string `yaml:"http_revers_proxy_addr"`
-	LOMS                struct {
+	Server   Server `yaml:"server"`
+	Database struct {
+		DSN string `yaml:"dsn"`
+	} `yaml:"database"`
+	LOMS struct {
 		Addr string `yaml:"addr"`
-	} `yaml:"LOMS"`
+	} `yaml:"loms"`
 	PIM struct {
 		Addr string `yaml:"addr"`
-	} `yaml:"PIM"`
+	} `yaml:"pim"`
 }
 
 func New() (*Config, error) {

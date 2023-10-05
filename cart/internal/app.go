@@ -1,14 +1,18 @@
 package internal
 
 import (
+	"context"
 	"fmt"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository"
 	"route256/cart/internal/repository/memstore"
+	"route256/cart/internal/repository/sqlstore"
 	"route256/cart/internal/server"
 	"route256/cart/internal/service/cart"
 	"route256/cart/internal/service/client/loms"
 	"route256/cart/internal/service/client/pim"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type depRepository struct {
@@ -37,8 +41,21 @@ func NewApp() (*application, error) {
 		return nil, err
 	}
 
+	var cartRepo repository.Cart
+
+	if app.config.Database.DSN != "" {
+		var pool *pgxpool.Pool
+		pool, err = pgxpool.New(context.TODO(), app.config.Database.DSN)
+		if err != nil {
+			return nil, err
+		}
+		cartRepo = sqlstore.NewCartRepository(pool)
+	} else {
+		cartRepo = memstore.NewCartRepository()
+	}
+
 	app.depRepository = &depRepository{
-		cart: memstore.NewCartRepository(),
+		cart: cartRepo,
 	}
 
 	pimClient := pim.NewClient(app.config.PIM.Addr)

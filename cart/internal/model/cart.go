@@ -1,13 +1,14 @@
 package model
 
 type Item struct {
-	SKU   SKU
-	Count uint32
+	ID     int
+	UserID UserID
+	SKU    SKU
+	Count  uint32
 }
 
 type ItemDetail struct {
-	SKU   SKU
-	Count uint32
+	Item
 	Price uint32
 	Name  string
 }

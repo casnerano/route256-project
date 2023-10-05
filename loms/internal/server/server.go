@@ -2,11 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/reflection"
 	"net"
 	"net/http"
 	"route256/loms/internal/config"
@@ -16,6 +11,11 @@ import (
 	pbOrder "route256/loms/pkg/proto/order/v1"
 	pbStock "route256/loms/pkg/proto/stock/v1"
 	"time"
+
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 )
 
 type orderService interface {
@@ -82,7 +82,7 @@ func (s *Server) ShutdownHTTP() error {
 
 func (s *Server) initGRPC() error {
 	s.grpc = grpc.NewServer()
-	fmt.Println(s.config.AddrGRPC)
+
 	listener, err := net.Listen("tcp", s.config.AddrGRPC)
 	if err != nil {
 		return err
