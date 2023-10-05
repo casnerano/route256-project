@@ -107,7 +107,7 @@ vendor-proto/validate:
 		rm -rf vendor-proto/tmp
 
 status-migrations:
-	$(BIN_DIR)/goose -dir ./migrations/postgres postgres postgres://user:password@localhost/cart?sslmode=disable status
+	$(BIN_DIR)/goose -dir ./migrations/postgres postgres postgres://user:password@localhost/loms?sslmode=disable status
 
 load-migrations:
-	$(BIN_DIR)/goose -dir ./migrations/postgres postgres postgres://user:password@localhost/cart?sslmode=disable up
+	$(BIN_DIR)/goose -dir ./migrations/postgres postgres postgres://user:password@localhost/loms?sslmode=disable up
