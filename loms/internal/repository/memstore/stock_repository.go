@@ -62,8 +62,6 @@ func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, coun
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
-	rep.setFixtureIfNotExist(sku)
-
 	if stock, ok := rep.store[sku]; ok {
 		if stock.Reserved < count {
 			return errors.New("small quantity of reserve")
@@ -81,8 +79,6 @@ func (rep *stockRepository) CancelReserve(_ context.Context, sku model.SKU, coun
 func (rep *stockRepository) ShipReserve(_ context.Context, sku model.SKU, count uint32) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
-
-	rep.setFixtureIfNotExist(sku)
 
 	if stock, ok := rep.store[sku]; ok {
 		if stock.Reserved < count {
