@@ -138,5 +138,10 @@ func (c *Cart) Checkout(ctx context.Context, userID model.UserID) (model.OrderID
 		return 0, err
 	}
 
+	err = c.rep.DeleteByUser(ctx, userID)
+	if err != nil {
+		return 0, err
+	}
+
 	return orderID, nil
 }
