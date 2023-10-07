@@ -32,7 +32,7 @@ func (rep *orderRepository) Add(ctx context.Context, userID model.UserID, items 
 	row := rep.pgxpool.QueryRow(
 		ctx,
 		`INSERT INTO "order" (user_id, status, items) VALUES ($1, $2, $3) RETURNING id, created_at`,
-		order.ID,
+		order.User,
 		order.Status,
 		order.Items,
 	)
