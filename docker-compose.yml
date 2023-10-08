@@ -59,6 +59,21 @@ services:
     networks:
       - internal
 
+  pgbouncer:
+    image: edoburu/pgbouncer
+    environment:
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_HOST=postgres
+      - POOL_MODE=transaction
+      - AUTH_TYPE=scram-sha-256
+    ports:
+      - "5432:5432"
+    depends_on:
+      - postgres
+    networks:
+      - internal
+
 volumes:
   postgres-data:
     driver: local

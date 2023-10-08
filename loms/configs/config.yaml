@@ -2,6 +2,6 @@ server:
   addr_grpc: 0.0.0.0:3200
   addr_http: 0.0.0.0:8080
 database:
-  dsn: "postgres://user:password@postgres/loms?sslmode=disable"
+  dsn: "postgres://user:password@pgbouncer:5432/loms?sslmode=disable"
 order:
   cancel_unpaid_timeout: 600
