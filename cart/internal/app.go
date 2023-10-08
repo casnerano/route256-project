@@ -58,7 +58,10 @@ func NewApp() (*application, error) {
 		cart: cartRepo,
 	}
 
-	pimClient := pim.NewClient(app.config.PIM.Addr)
+	pimClient, err := pim.NewClient(app.config.PIM.Addr)
+	if err != nil {
+		return nil, err
+	}
 
 	lomsClient, err := loms.NewClient(app.config.LOMS.Addr)
 	if err != nil {

@@ -40,13 +40,18 @@ install-smartimports: bindir
 		mv ${BIN_DIR}/smartimports ${SMART_IMPORTS})
 
 .install-bin-deps:
+	GOBIN=$(BIN_DIR) go install github.com/vadimi/grpc-client-cli/cmd/grpc-client-cli@latest
 	GOBIN=$(BIN_DIR) go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	GOBIN=$(BIN_DIR) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	GOBIN=$(BIN_DIR) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
 	GOBIN=$(BIN_DIR) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest
 	GOBIN=$(BIN_DIR) go install github.com/envoyproxy/protoc-gen-validate@latest
 
-build-proto:
+load-product-service-proto:
+	mkdir -p api/client/product/
+	${BIN_DIR}/grpc-client-cli -s route256.product.ProductService discover route256.pavl.uk:8082 > api/client/product/product_service.proto
+
+build-proto: load-product-service-proto
 	mkdir -p api/v1/openapiv2
 	protoc \
 		--proto_path=vendor-proto \
@@ -57,6 +62,15 @@ build-proto:
 		--plugin=protoc-gen-grpc-gateway=$(BIN_DIR)/protoc-gen-grpc-gateway --grpc-gateway_out="." --grpc-gateway_opt="logtostderr=true" --grpc-gateway_opt="paths=import" --grpc-gateway_opt="generate_unbound_methods=true" \
 		--plugin=protoc-gen-validate=$(BIN_DIR)/protoc-gen-validate --validate_out="lang=go,paths=import:." \
 		api/v1/*.proto
+
+	mkdir -p pkg/proto/client/product
+	protoc \
+    	--proto_path=vendor-proto \
+    	--proto_path=api/client/product \
+    	--plugin=protoc-gen-go=${BIN_DIR}/protoc-gen-go --go_out="pkg/proto/client/product" --go_opt="paths=source_relative" \
+    	--plugin=protoc-gen-go-grpc=${BIN_DIR}/protoc-gen-go-grpc --go-grpc_out="pkg/proto/client/product" --go-grpc_opt="paths=source_relative" \
+		api/client/product/*.proto
+
 	go mod tidy
 
 .vendor-rm:
