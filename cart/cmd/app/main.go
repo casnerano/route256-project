@@ -25,7 +25,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err = app.RunGRPCServer(); err != http.ErrServerClosed {
+		if err = app.RunGRPCServer(); err != nil {
 			log.Fatal(fmt.Errorf("failed run grpc server: %w", err))
 		}
 	}()
@@ -33,7 +33,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err = app.RunHTTPServer(); err != http.ErrServerClosed {
+		if err = app.RunHTTPServer(); err != nil && err != http.ErrServerClosed {
 			log.Fatal(fmt.Errorf("failed run http server: %w", err))
 		}
 	}()
