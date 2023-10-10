@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-const defaultWorkerCount = 3
+const defaultWorkerCount = 10
 
 type WorkerPool[Task any, Result any] struct {
 	workerCount int
@@ -44,7 +44,6 @@ func (wp *WorkerPool[Task, Result]) Run(ctx context.Context, tasks <-chan Task) 
 
 			// Reads data (tasks) from the input channel
 			// until the channel is closed or the context is canceled.
-
 			for {
 				select {
 				// Context can be canceled.

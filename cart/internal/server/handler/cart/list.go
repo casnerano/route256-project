@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	cartService "route256/cart/internal/service/cart"
+	"route256/cart/internal/service/cart/worker_pool"
 	pb "route256/cart/pkg/proto/cart/v1"
 	"time"
 
@@ -21,7 +22,7 @@ func (s Handler) List(ctx context.Context, in *pb.ListRequest) (*pb.ListResponse
 	sCtx, cancel := context.WithTimeout(ctx, 300*time.Second)
 	defer cancel()
 
-	list, err := s.service.List(sCtx, in.GetUser())
+	list, err := s.service.List(sCtx, worker_pool.New(), in.GetUser())
 	if err != nil {
 		if errors.Is(err, cartService.ErrNotFound) {
 			return response, nil
