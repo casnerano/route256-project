@@ -6,4 +6,4 @@ database:
 loms:
   addr: loms:3200
 pim:
-  addr: http://route256.pavl.uk:8080
+  addr: route256.pavl.uk:8082
