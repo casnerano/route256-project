@@ -104,7 +104,7 @@ func (a *application) RunHTTPServer() error {
 
 func (a *application) Shutdown() error {
 	if err := a.depService.lomsClient.Close(); err != nil {
-		return nil
+		return err
 	}
 
 	if err := a.server.ShutdownHTTP(); err != nil {
