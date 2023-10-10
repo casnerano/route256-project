@@ -26,7 +26,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err = app.RunGRPCServer(); err != http.ErrServerClosed {
-			log.Fatal(fmt.Errorf("failed run server: %w", err))
+			log.Fatal(fmt.Errorf("failed run grpc server: %w", err))
 		}
 	}()
 
@@ -34,7 +34,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err = app.RunHTTPServer(); err != http.ErrServerClosed {
-			log.Fatal(fmt.Errorf("failed run server: %w", err))
+			log.Fatal(fmt.Errorf("failed run http server: %w", err))
 		}
 	}()
 
