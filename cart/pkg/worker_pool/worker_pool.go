@@ -10,9 +10,13 @@ const defaultWorkerCount = 3
 
 type workerPool[Task any, Result any] struct {
 	workerCount int
-	processing  func(Task) Result
+	// callback function for processing incoming tasks
+	processing func(Task) Result
 }
 
+// New - worker pool constructor.
+// The type parameter is used to set the Task type for the input channel
+// and the Result type for the output channel.
 func New[Task any, Result any](processing func(Task) Result) *workerPool[Task, Result] {
 	return &workerPool[Task, Result]{
 		workerCount: defaultWorkerCount,
@@ -20,9 +24,13 @@ func New[Task any, Result any](processing func(Task) Result) *workerPool[Task, R
 	}
 }
 
-func (wp *workerPool[Task, Result]) Run(ctx context.Context, input <-chan Task) <-chan Result {
-	resultCh := make(chan Result)
+// The Run method starts all workers.
+// Each worker is a goroutine that reads messages (task) from a single input channel,
+// processes the message using a callback function and puts the result in the output channel.
+func (wp *workerPool[Task, Result]) Run(ctx context.Context, tasks <-chan Task) <-chan Result {
+	results := make(chan Result)
 
+	// WaitGroup to control the completion of all workers to close the output channel.
 	var wg sync.WaitGroup
 	wg.Add(wp.workerCount)
 
@@ -34,36 +42,48 @@ func (wp *workerPool[Task, Result]) Run(ctx context.Context, input <-chan Task) 
 				wg.Done()
 			}()
 
+			// Reads data (tasks) from the input channel
+			// until the channel is closed or the context is canceled.
+
 			for {
 				select {
+				// Context can be canceled.
 				case <-ctx.Done():
 					return
-				case data, ok := <-input:
+
+				// Reading data (tasks) from the input channel until the channel is closed.
+				case task, ok := <-tasks:
 					if !ok {
 						return
 					}
 
-					fmt.Printf("Worker #%d received %v\n", index, data)
+					fmt.Printf("Worker #%d received %v\n", index, task)
 
+					// The result of processing the task is sent to the output channel.
 					select {
+					// When sending the result to the output channel, the context may be canceled,
+					// since the consumer may not immediately read the message.
 					case <-ctx.Done():
 						return
-					case resultCh <- wp.processing(data):
-						fmt.Printf("Worker #%d return %v\n", index, wp.processing(data))
+					// Processing the message via callback and send the result in the output channel.
+					case results <- wp.processing(task):
+						fmt.Printf("Worker #%d sent result %v\n", index, wp.processing(task))
 					}
 				}
 			}
 		}(i + 1)
 	}
 
+	// WaitGroup waits for all goroutine to finish and closes the output channel.
 	go func() {
 		wg.Wait()
-		close(resultCh)
+		close(results)
 	}()
 
-	return resultCh
+	return results
 }
 
+// SetWorkerCount method for set the workers count.
 func (wp *workerPool[Task, Result]) SetWorkerCount(count int) {
 	wp.workerCount = count
 }
