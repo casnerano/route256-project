@@ -7,3 +7,4 @@ loms:
   addr: loms:3200
 pim:
   addr: route256.pavl.uk:8082
+  rate_limiter_addr: pim_rate_limiter:3000

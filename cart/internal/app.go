@@ -11,6 +11,7 @@ import (
 	"route256/cart/internal/service/cart"
 	"route256/cart/internal/service/client/loms"
 	"route256/cart/internal/service/client/pim"
+	"route256/cart/pkg/limiter"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -28,6 +29,7 @@ type depService struct {
 type application struct {
 	config        *config.Config
 	server        *server.Server
+	pimLimiter    *limiter.Limiter
 	depRepository *depRepository
 	depService    *depService
 }
@@ -54,11 +56,16 @@ func NewApp() (*application, error) {
 		cartRepo = memstore.NewCartRepository()
 	}
 
+	app.pimLimiter, err = limiter.New(app.config.PIM.RateLimiterAddr)
+	if err != nil {
+		return nil, err
+	}
+
 	app.depRepository = &depRepository{
 		cart: cartRepo,
 	}
 
-	pimClient, err := pim.NewClient(app.config.PIM.Addr)
+	pimClient, err := pim.NewClient(app.config.PIM.Addr, app.pimLimiter)
 	if err != nil {
 		return nil, err
 	}
@@ -104,6 +111,10 @@ func (a *application) RunHTTPServer() error {
 
 func (a *application) Shutdown() error {
 	if err := a.depService.lomsClient.Close(); err != nil {
+		return err
+	}
+
+	if err := a.pimLimiter.Close(); err != nil {
 		return err
 	}
 

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"route256/cart/internal/model"
 	"route256/cart/pkg/interceptor"
+	"route256/cart/pkg/limiter"
 	pb "route256/cart/pkg/proto/client/product"
 )
 
@@ -18,11 +19,11 @@ type Client struct {
 	productClient pb.ProductServiceClient
 }
 
-func NewClient(addr string) (*Client, error) {
+func NewClient(addr string, limiter *limiter.Limiter) (*Client, error) {
 	grpcConn, err := grpc.Dial(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithUnaryInterceptor(interceptor.ClientUnaryRateLimiter()),
+		grpc.WithUnaryInterceptor(interceptor.ClientUnaryRateLimiter(limiter)),
 	)
 	if err != nil {
 		return nil, err

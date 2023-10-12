@@ -3,13 +3,11 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
+	"golang.org/x/time/rate"
 	"log"
 	"net"
 	"os"
 	"os/signal"
-
-	"golang.org/x/time/rate"
 )
 
 var (
@@ -30,14 +28,14 @@ func main() {
 	defer func() {
 		err = listener.Close()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}()
 
 	go func() {
 		<-ctx.Done()
 		if err = listener.Close(); err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}()
 
@@ -45,7 +43,7 @@ func main() {
 		conn, err := listener.Accept()
 
 		if err != nil {
-			fmt.Println("Error accepting: ", err)
+			log.Println("Error accepting: ", err)
 			return
 		}
 
@@ -53,16 +51,16 @@ func main() {
 			defer func() {
 				err := conn.Close()
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 				}
 			}()
 
-			buf := make([]byte, 32)
+			buf := make([]byte, 1)
 
 			for {
 				_, err := conn.Read(buf)
 				if err != nil {
-					fmt.Println("Error reading: ", err)
+					log.Println("Error reading: ", err)
 					return
 				}
 
@@ -70,12 +68,12 @@ func main() {
 
 				err = rateLimiter.Wait(ctx)
 				if err != nil {
-					fmt.Println("Error limiter wait: ", err)
+					log.Println("Error limiter wait: ", err)
 				}
 
 				_, err = conn.Write([]byte{1})
 				if err != nil {
-					fmt.Println("Error writing:", err)
+					log.Println("Error writing:", err)
 					return
 				}
 			}

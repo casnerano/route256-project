@@ -10,6 +10,7 @@ services:
     depends_on:
       - migration
       - loms
+      - pim_rate_limiter
     networks:
       - internal
 
@@ -74,13 +75,11 @@ services:
     networks:
       - internal
 
-  pim-limiter:
-    image: limiter
+  pim_rate_limiter:
+    image: pim_rate_limiter
     build: ./limiter
     ports:
       - "3000:3000"
-    depends_on:
-      - cart
     networks:
       - internal
 
