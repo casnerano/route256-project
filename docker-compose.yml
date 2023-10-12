@@ -74,6 +74,16 @@ services:
     networks:
       - internal
 
+  pim-limiter:
+    image: limiter
+    build: ./limiter
+    ports:
+      - "3000:3000"
+    depends_on:
+      - cart
+    networks:
+      - internal
+
 volumes:
   postgres-data:
     driver: local
