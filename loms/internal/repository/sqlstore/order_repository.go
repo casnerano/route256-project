@@ -4,19 +4,18 @@ import (
 	"context"
 	"errors"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
 	"time"
 )
 
 type orderRepository struct {
-	pgxpool *pgxpool.Pool
+	provider Provider
 }
 
-func NewOrderRepository(pgxpool *pgxpool.Pool) repository.Order {
+func NewOrderRepository(provider Provider) repository.Order {
 	return &orderRepository{
-		pgxpool: pgxpool,
+		provider: provider,
 	}
 }
 
@@ -29,7 +28,7 @@ func (rep *orderRepository) Add(ctx context.Context, userID model.UserID, items 
 		Items:  items,
 	}
 
-	row := rep.pgxpool.QueryRow(
+	row := rep.provider.Store(ctx).QueryRow(
 		ctx,
 		`INSERT INTO "order" (user_id, status, items) VALUES ($1, $2, $3) RETURNING id, created_at`,
 		order.User,
@@ -54,7 +53,7 @@ func (rep *orderRepository) FindByID(ctx context.Context, id model.OrderID) (*mo
 		ID: id,
 	}
 
-	row := rep.pgxpool.QueryRow(ctx, `SELECT user_id, status, items, created_at FROM "order" where id = $1`, order.ID)
+	row := rep.provider.Store(ctx).QueryRow(ctx, `SELECT user_id, status, items, created_at FROM "order" where id = $1`, order.ID)
 
 	err := row.Scan(
 		&order.User,
@@ -74,12 +73,12 @@ func (rep *orderRepository) FindByID(ctx context.Context, id model.OrderID) (*mo
 }
 
 func (rep *orderRepository) ChangeStatus(ctx context.Context, id model.OrderID, status model.OrderStatus) error {
-	_, err := rep.pgxpool.Exec(ctx, `UPDATE "order" set status = $1 where id = $2`, status, id)
+	_, err := rep.provider.Store(ctx).Exec(ctx, `UPDATE "order" set status = $1 where id = $2`, status, id)
 	return err
 }
 
 func (rep *orderRepository) FindByUnpaidStatusWithDuration(ctx context.Context, duration time.Duration) ([]*model.Order, error) {
-	rows, err := rep.pgxpool.Query(
+	rows, err := rep.provider.Store(ctx).Query(
 		ctx,
 		`SELECT id, user_id, status, items, created_at FROM "order" where status = $1 and created_at > $2`,
 		model.OrderStatusNew,

@@ -14,30 +14,47 @@ var (
 	ErrShipReserve     = errors.New("failed ship reserve")
 	ErrCancelReserve   = errors.New("failed cancel reserve")
 	ErrAddReserve      = errors.New("failed add reserve")
+	ErrPayedOrder      = errors.New("failed payed order")
 )
 
 type Order struct {
-	repOrder repository.Order
-	repStock repository.Stock
+	transactor repository.Transactor
+	repOrder   repository.Order
+	repStock   repository.Stock
 }
 
-func New(repOrder repository.Order, repStock repository.Stock) *Order {
-	return &Order{repOrder: repOrder, repStock: repStock}
+func New(transactor repository.Transactor, repOrder repository.Order, repStock repository.Stock) *Order {
+	return &Order{
+		transactor: transactor,
+		repOrder:   repOrder,
+		repStock:   repStock,
+	}
 }
 
 func (o *Order) Create(ctx context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error) {
-	for _, item := range items {
-		if err := o.repStock.AddReserve(ctx, item.SKU, item.Count); err != nil {
-			return nil, ErrAddReserve
-		}
-	}
+	var createdOrder *model.Order
 
-	createdOrder, err := o.repOrder.Add(ctx, userID, items)
+	err := o.transactor.RunRepeatableRead(ctx, func(txCtx context.Context) error {
+		for _, item := range items {
+			if err := o.repStock.AddReserve(txCtx, item.SKU, item.Count); err != nil {
+				return ErrAddReserve
+			}
+		}
+
+		var err error
+		createdOrder, err = o.repOrder.Add(txCtx, userID, items)
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				return ErrNotFound
+			}
+
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
-		if errors.Is(err, repository.ErrNotFound) {
-			return nil, ErrNotFound
-		}
-
 		return nil, err
 	}
 
@@ -67,13 +84,21 @@ func (o *Order) Payment(ctx context.Context, orderID model.OrderID) error {
 		return err
 	}
 
-	for _, foundOrderItem := range foundOrder.Items {
-		if err = o.repStock.ShipReserve(ctx, foundOrderItem.SKU, foundOrderItem.Count); err != nil {
-			return ErrShipReserve
-		}
+	if foundOrder.Status != model.OrderStatusNew {
+		return ErrPayedOrder
 	}
 
-	return o.repOrder.ChangeStatus(ctx, orderID, model.OrderStatusPayed)
+	err = o.transactor.RunRepeatableRead(ctx, func(txCtx context.Context) error {
+		for _, foundOrderItem := range foundOrder.Items {
+			if err = o.repStock.ShipReserve(txCtx, foundOrderItem.SKU, foundOrderItem.Count); err != nil {
+				return ErrShipReserve
+			}
+		}
+
+		return o.repOrder.ChangeStatus(txCtx, orderID, model.OrderStatusPayed)
+	})
+
+	return err
 }
 
 func (o *Order) Cancel(ctx context.Context, orderID model.OrderID) error {
@@ -90,13 +115,17 @@ func (o *Order) Cancel(ctx context.Context, orderID model.OrderID) error {
 		return ErrCancelPaidOrder
 	}
 
-	for _, foundOrderItem := range foundOrder.Items {
-		if err = o.repStock.CancelReserve(ctx, foundOrderItem.SKU, foundOrderItem.Count); err != nil {
-			return ErrCancelReserve
+	err = o.transactor.RunRepeatableRead(ctx, func(txCtx context.Context) error {
+		for _, foundOrderItem := range foundOrder.Items {
+			if err = o.repStock.CancelReserve(txCtx, foundOrderItem.SKU, foundOrderItem.Count); err != nil {
+				return ErrCancelReserve
+			}
 		}
-	}
 
-	return o.repOrder.ChangeStatus(ctx, orderID, model.OrderStatusCanceled)
+		return o.repOrder.ChangeStatus(txCtx, orderID, model.OrderStatusCanceled)
+	})
+
+	return err
 }
 
 func (o *Order) CancelUnpaidWithDuration(ctx context.Context, duration time.Duration) error {
