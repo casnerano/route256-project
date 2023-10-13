@@ -2,11 +2,9 @@ package limiter
 
 import (
 	"net"
-	"sync"
 )
 
 type Limiter struct {
-	mu   sync.Mutex
 	conn net.Conn
 }
 

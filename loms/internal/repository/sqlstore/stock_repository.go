@@ -3,10 +3,11 @@ package sqlstore
 import (
 	"context"
 	"errors"
-	"github.com/jackc/pgx/v5"
 	"math/rand"
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type stockRepository struct {

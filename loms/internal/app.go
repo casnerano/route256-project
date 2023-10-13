@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"route256/loms/internal/config"
 	"route256/loms/internal/repository"
 	"route256/loms/internal/repository/sqlstore"
@@ -11,6 +10,8 @@ import (
 	"route256/loms/internal/service/order"
 	"route256/loms/internal/service/stock"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type worker interface {

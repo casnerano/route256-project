@@ -3,8 +3,9 @@ package interceptor
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
 	"route256/cart/pkg/limiter"
+
+	"google.golang.org/grpc"
 )
 
 func ClientUnaryRateLimiter(limiter *limiter.Limiter) grpc.UnaryClientInterceptor {

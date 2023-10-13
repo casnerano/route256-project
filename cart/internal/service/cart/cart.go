@@ -145,7 +145,7 @@ func (c *Cart) List(ctx context.Context, wp *worker_pool.WorkerPool, userID mode
 	for k := range list {
 		productInfo, ok := productList[list[k].SKU]
 		if !ok {
-			return nil, fmt.Errorf("failed to get product info from product.service with sku %s", list[k].SKU)
+			return nil, fmt.Errorf("failed to get product info from product.service with sku %d", list[k].SKU)
 		}
 
 		detailList = append(detailList, &model.ItemDetail{

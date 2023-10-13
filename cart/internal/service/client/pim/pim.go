@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"route256/cart/internal/model"
 	"route256/cart/pkg/interceptor"
 	"route256/cart/pkg/limiter"
 	pb "route256/cart/pkg/proto/client/product"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var ErrProductNotFound = errors.New("product not found")

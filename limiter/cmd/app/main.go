@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"flag"
-	"golang.org/x/time/rate"
 	"log"
 	"net"
 	"os"
 	"os/signal"
+
+	"golang.org/x/time/rate"
 )
 
 var (
