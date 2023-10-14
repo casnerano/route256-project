@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository"
-	"route256/cart/internal/repository/memstore"
 	"route256/cart/internal/repository/sqlstore"
 	"route256/cart/internal/server"
 	"route256/cart/internal/service/cart"
@@ -45,16 +44,16 @@ func NewApp() (*application, error) {
 
 	var cartRepo repository.Cart
 
-	if app.config.Database.DSN != "" {
-		var pool *pgxpool.Pool
-		pool, err = pgxpool.New(context.TODO(), app.config.Database.DSN)
-		if err != nil {
-			return nil, err
-		}
-		cartRepo = sqlstore.NewCartRepository(pool)
-	} else {
-		cartRepo = memstore.NewCartRepository()
+	if app.config.Database.DSN == "" {
+		return nil, fmt.Errorf("database dsn is required")
 	}
+
+	var pool *pgxpool.Pool
+	pool, err = pgxpool.New(context.TODO(), app.config.Database.DSN)
+	if err != nil {
+		return nil, err
+	}
+	cartRepo = sqlstore.NewCartRepository(pool)
 
 	app.pimLimiter, err = limiter.New(app.config.PIM.RateLimiterAddr)
 	if err != nil {
