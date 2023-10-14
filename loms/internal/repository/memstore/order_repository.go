@@ -26,7 +26,7 @@ func NewOrderRepository() repository.Order {
 
 var _ repository.Order = (*orderRepository)(nil)
 
-func (rep *orderRepository) Add(ctx context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error) {
+func (rep *orderRepository) Add(_ context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error) {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -44,22 +44,22 @@ func (rep *orderRepository) Add(ctx context.Context, userID model.UserID, items 
 	return &order, nil
 }
 
-func (rep *orderRepository) FindByID(_ context.Context, orderID model.OrderID) (*model.Order, error) {
+func (rep *orderRepository) FindByID(_ context.Context, id model.OrderID) (*model.Order, error) {
 	rep.mu.RLock()
 	defer rep.mu.RUnlock()
 
-	if order, ok := rep.store[orderID]; ok {
+	if order, ok := rep.store[id]; ok {
 		return order, nil
 	}
 
 	return nil, repository.ErrNotFound
 }
 
-func (rep *orderRepository) ChangeStatus(_ context.Context, orderID model.OrderID, status model.OrderStatus) error {
+func (rep *orderRepository) ChangeStatus(_ context.Context, id model.OrderID, status model.OrderStatus) error {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
-	if order, ok := rep.store[orderID]; ok {
+	if order, ok := rep.store[id]; ok {
 		order.Status = status
 		return nil
 	}

@@ -7,11 +7,6 @@ import (
 	pb "route256/loms/pkg/proto/order/v1"
 )
 
-type item struct {
-	SKU   model.SKU `json:"sku"`
-	Count uint16    `json:"count"`
-}
-
 type Service interface {
 	Create(ctx context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error)
 	GetInfo(ctx context.Context, orderID model.OrderID) (*model.Order, error)

@@ -12,8 +12,9 @@ import (
 type cartStorage = map[model.UserID]map[model.SKU]uint32
 
 type cartRepository struct {
-	mu    *sync.RWMutex
-	store cartStorage
+	mu      *sync.RWMutex
+	store   cartStorage
+	counter int
 }
 
 func NewCartRepository() repository.Cart {
@@ -25,7 +26,7 @@ func NewCartRepository() repository.Cart {
 
 var _ repository.Cart = (*cartRepository)(nil)
 
-func (rep *cartRepository) Add(_ context.Context, userID model.UserID, item *model.Item) error {
+func (rep *cartRepository) Add(_ context.Context, userID model.UserID, sku model.SKU, count uint32) (*model.Item, error) {
 	rep.mu.Lock()
 	defer rep.mu.Unlock()
 
@@ -33,8 +34,15 @@ func (rep *cartRepository) Add(_ context.Context, userID model.UserID, item *mod
 		rep.store[userID] = make(map[model.SKU]uint32)
 	}
 
-	rep.store[userID][item.SKU] = item.Count
-	return nil
+	rep.store[userID][sku] = count
+	rep.counter++
+
+	return &model.Item{
+		ID:     rep.counter,
+		UserID: userID,
+		SKU:    sku,
+		Count:  count,
+	}, nil
 }
 
 func (rep *cartRepository) FindByUser(_ context.Context, userID model.UserID) ([]*model.Item, error) {

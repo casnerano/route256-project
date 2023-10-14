@@ -23,8 +23,11 @@ type Order struct {
 }
 
 type Config struct {
-	Server Server `yaml:"server"`
-	Order  Order  `yaml:"order"`
+	Server   Server `yaml:"server"`
+	Database struct {
+		DSN string `yaml:"dsn"`
+	} `yaml:"database"`
+	Order Order `yaml:"order"`
 }
 
 func New() (*Config, error) {

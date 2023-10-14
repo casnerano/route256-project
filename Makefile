@@ -1,4 +1,5 @@
 build-all:
+	cp ./infrastructure/.env.dist ./.env
 	cd cart && GOOS=linux GOARCH=amd64 make build
 	cd loms && GOOS=linux GOARCH=amd64 make build
 	cd notifications && GOOS=linux GOARCH=amd64 make build

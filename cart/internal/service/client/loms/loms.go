@@ -2,11 +2,12 @@ package loms
 
 import (
 	"context"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"route256/cart/internal/model"
 	pbOrder "route256/loms/pkg/proto/order/v1"
 	pbStock "route256/loms/pkg/proto/stock/v1"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Client struct {
