@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"route256/cart/internal/model"
 	"route256/cart/internal/repository"
+	"route256/cart/internal/service/cart/worker_pool"
 	"route256/cart/internal/service/client/pim"
+	"sync"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -74,9 +77,7 @@ func (c *Cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) e
 
 // List returns a detailed list of the cart items.
 // The items is a combination of cart values and product info from ProductService.
-//
-// TODO: the solution contains problem n+1 and incorrect behavior as a result of the context deadline.
-func (c *Cart) List(ctx context.Context, userID model.UserID) ([]*model.ItemDetail, error) {
+func (c *Cart) List(ctx context.Context, wp *worker_pool.WorkerPool, userID model.UserID) ([]*model.ItemDetail, error) {
 	list, err := c.rep.FindByUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -86,11 +87,65 @@ func (c *Cart) List(ctx context.Context, userID model.UserID) ([]*model.ItemDeta
 		return nil, err
 	}
 
+	// Function for processing task in worker.
+	processor := func(ctx context.Context, task worker_pool.Task) *worker_pool.Result {
+		productInfo, err := c.pim.GetProductInfo(ctx, task.SKU)
+		if err != nil {
+			log.Println("Failed processing task in worker pool: ", err)
+			return nil
+		}
+
+		return &worker_pool.Result{
+			SKU: task.SKU,
+			ProductInfo: model.ProductInfo{
+				Name:  productInfo.Name,
+				Price: productInfo.Price,
+			},
+		}
+	}
+
+	tasksCh := make(chan worker_pool.Task)
+	resultsCh := wp.Run(ctx, tasksCh, processor)
+
+	productList := make(map[model.SKU]*model.ProductInfo)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	// Goroutine for listen workers result channel.
+	// Read len(list) results.
+	go func() {
+		defer wg.Done()
+		for i := 0; i < len(list); i++ {
+			select {
+			case result, ok := <-resultsCh:
+				if ok {
+					if result != nil {
+						productList[result.SKU] = &result.ProductInfo
+					}
+
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	// Send tasks to the tasks channel.
+	for _, item := range list {
+		tasksCh <- worker_pool.Task{SKU: item.SKU}
+	}
+
+	// Wait getting the results of all tasks
+	wg.Wait()
+
+	close(tasksCh)
+
 	detailList := make([]*model.ItemDetail, 0, len(list))
 	for k := range list {
-		productInfo, err := c.pim.GetProductInfo(ctx, list[k].SKU)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get product info from product.service: %w", err)
+		productInfo, ok := productList[list[k].SKU]
+		if !ok {
+			return nil, fmt.Errorf("failed to get product info from product.service with sku %d", list[k].SKU)
 		}
 
 		detailList = append(detailList, &model.ItemDetail{

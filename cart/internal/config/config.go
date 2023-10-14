@@ -27,7 +27,8 @@ type Config struct {
 		Addr string `yaml:"addr"`
 	} `yaml:"loms"`
 	PIM struct {
-		Addr string `yaml:"addr"`
+		Addr            string `yaml:"addr"`
+		RateLimiterAddr string `yaml:"rate_limiter_addr"`
 	} `yaml:"pim"`
 }
 
@@ -47,7 +48,8 @@ func (c *Config) SetDefaultValues() {
 	c.Server.AddrGRPC = "0.0.0.0:3200"
 	c.Server.AddrHTTP = "0.0.0.0:8080"
 	c.LOMS.Addr = "loms:3200"
-	c.PIM.Addr = "http://route256.pavl.uk:8080"
+	c.PIM.Addr = "route256.pavl.uk:8082"
+	c.PIM.RateLimiterAddr = "pim_rate_limiter:3000"
 }
 
 func (c *Config) SetFileValues(filename string) error {

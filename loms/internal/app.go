@@ -1,115 +1,116 @@
 package internal
 
 import (
-    "context"
-    "fmt"
-    "github.com/jackc/pgx/v5/pgxpool"
-    "route256/loms/internal/config"
-    "route256/loms/internal/repository"
-    "route256/loms/internal/repository/memstore"
-    "route256/loms/internal/repository/sqlstore"
-    "route256/loms/internal/server"
-    "route256/loms/internal/service/order"
-    "route256/loms/internal/service/stock"
-    "time"
+	"context"
+	"fmt"
+	"route256/loms/internal/config"
+	"route256/loms/internal/repository"
+	"route256/loms/internal/repository/sqlstore"
+	"route256/loms/internal/server"
+	"route256/loms/internal/service/order"
+	"route256/loms/internal/service/stock"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type worker interface {
-    Run(ctx context.Context) error
+	Run(ctx context.Context) error
 }
 
 type depWorker struct {
-    cancelUnpaidOrder worker
+	cancelUnpaidOrder worker
 }
 
 type depRepository struct {
-    order repository.Order
-    stock repository.Stock
+	order repository.Order
+	stock repository.Stock
 }
 
 type depService struct {
-    order *order.Order
-    stock *stock.Stock
+	order *order.Order
+	stock *stock.Stock
 }
 
 type application struct {
-    config        *config.Config
-    server        *server.Server
-    depRepository *depRepository
-    depService    *depService
-    depWorker     *depWorker
+	config        *config.Config
+	server        *server.Server
+	transactor    repository.Transactor
+	depRepository *depRepository
+	depService    *depService
+	depWorker     *depWorker
 }
 
 func NewApp() (*application, error) {
-    var err error
-    app := application{}
+	var err error
+	app := application{}
 
-    app.config, err = config.New()
-    if err != nil {
-        return nil, err
-    }
+	app.config, err = config.New()
+	if err != nil {
+		return nil, err
+	}
 
-    if app.config.Database.DSN != "" {
-        var pool *pgxpool.Pool
-        pool, err = pgxpool.New(context.TODO(), app.config.Database.DSN)
-        if err != nil {
-            return nil, err
-        }
+	if app.config.Database.DSN == "" {
+		return nil, fmt.Errorf("database dsn is required")
+	}
 
-        app.depRepository = &depRepository{
-            order: sqlstore.NewOrderRepository(pool),
-            stock: sqlstore.NewStockRepository(pool),
-        }
-    } else {
-        app.depRepository = &depRepository{
-            order: memstore.NewOrderRepository(),
-            stock: memstore.NewStockRepository(),
-        }
-    }
+	var pool *pgxpool.Pool
+	pool, err = pgxpool.New(context.TODO(), app.config.Database.DSN)
+	if err != nil {
+		return nil, err
+	}
 
-    app.depService = &depService{
-        order: order.New(app.depRepository.order, app.depRepository.stock),
-        stock: stock.New(app.depRepository.stock),
-    }
+	sqlTransactor := sqlstore.NewTransactor(pool)
+	app.transactor = sqlTransactor
 
-    app.depWorker = &depWorker{
-        cancelUnpaidOrder: order.NewCancelUnpaidWorker(
-            app.depService.order,
-            time.Duration(app.config.Order.CancelUnpaidTimeout)*time.Second,
-        ),
-    }
+	app.depRepository = &depRepository{
+		order: sqlstore.NewOrderRepository(sqlTransactor),
+		stock: sqlstore.NewStockRepository(sqlTransactor),
+	}
 
-    err = app.init()
-    if err != nil {
-        return nil, fmt.Errorf("failed init server: %w", err)
-    }
+	app.depService = &depService{
+		order: order.New(app.transactor, app.depRepository.order, app.depRepository.stock),
+		stock: stock.New(app.depRepository.stock),
+	}
 
-    return &app, nil
+	app.depWorker = &depWorker{
+		cancelUnpaidOrder: order.NewCancelUnpaidWorker(
+			app.depService.order,
+			time.Duration(app.config.Order.CancelUnpaidTimeout)*time.Second,
+		),
+	}
+
+	err = app.init()
+	if err != nil {
+		return nil, fmt.Errorf("failed init server: %w", err)
+	}
+
+	return &app, nil
 }
 
 func (a *application) init() error {
-    var err error
-    a.server, err = server.New(a.config.Server, a.depService.order, a.depService.stock)
+	var err error
+	a.server, err = server.New(a.config.Server, a.depService.order, a.depService.stock)
 
-    return err
+	return err
 }
 
 func (a *application) RunGRPCServer() error {
-    return a.server.RunGRPC()
+	return a.server.RunGRPC()
 }
 
 func (a *application) RunHTTPServer() error {
-    return a.server.RunHTTP()
+	return a.server.RunHTTP()
 }
 
 func (a *application) Shutdown() error {
-    if err := a.server.ShutdownHTTP(); err != nil {
-        return err
-    }
+	if err := a.server.ShutdownHTTP(); err != nil {
+		return err
+	}
 
-    return a.server.ShutdownGRPC()
+	return a.server.ShutdownGRPC()
 }
 
 func (a *application) RunCancelUnpaidOrderWorker(ctx context.Context) error {
-    return a.depWorker.cancelUnpaidOrder.Run(ctx)
+	return a.depWorker.cancelUnpaidOrder.Run(ctx)
 }

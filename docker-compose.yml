@@ -10,6 +10,7 @@ services:
     depends_on:
       - migration
       - loms
+      - pim_rate_limiter
     networks:
       - internal
 
@@ -71,6 +72,14 @@ services:
       - "5432:5432"
     depends_on:
       - postgres
+    networks:
+      - internal
+
+  pim_rate_limiter:
+    image: pim_rate_limiter
+    build: ./limiter
+    ports:
+      - "3000:3000"
     networks:
       - internal
 
