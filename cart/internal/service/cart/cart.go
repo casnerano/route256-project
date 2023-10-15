@@ -1,5 +1,7 @@
 package cart
 
+//go:generate mockgen -destination=mock/cart.go -source=cart.go
+
 import (
 	"context"
 	"errors"
