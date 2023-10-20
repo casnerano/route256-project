@@ -3,16 +3,16 @@ package cart
 import (
 	"context"
 	"errors"
-	"route256/cart/internal/repository"
-	"testing"
-
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
-
 	"route256/cart/internal/model"
+	"route256/cart/internal/repository"
 	mock_repository "route256/cart/internal/repository/mock"
 	mock_cart "route256/cart/internal/service/cart/mock"
+	"route256/cart/internal/service/cart/worker_pool"
+	mock_worker_pool "route256/cart/internal/service/cart/worker_pool/mock"
 	"route256/cart/internal/service/client/pim"
+	"testing"
 )
 
 var fakeError = errors.New("fake error")
@@ -28,6 +28,7 @@ type CartTestSuite struct {
 	rep  *mock_repository.MockCart
 	pim  *mock_cart.MockPIMClient
 	loms *mock_cart.MockLOMSClient
+	wp   *mock_worker_pool.MockWorkerPool
 }
 
 func (s *CartTestSuite) SetupSuite() {
@@ -37,6 +38,7 @@ func (s *CartTestSuite) SetupSuite() {
 	s.rep = mock_repository.NewMockCart(ctrl)
 	s.pim = mock_cart.NewMockPIMClient(ctrl)
 	s.loms = mock_cart.NewMockLOMSClient(ctrl)
+	s.wp = mock_worker_pool.NewMockWorkerPool(ctrl)
 
 	s.cart = New(s.rep, s.pim, s.loms)
 }
@@ -139,6 +141,93 @@ func (s *CartTestSuite) TestCartDelete() {
 
 		err := s.cart.Delete(ctx, fItem.UserID, fItem.SKU)
 		s.NoError(err)
+	})
+}
+
+func (s *CartTestSuite) TestCartList() {
+	fItem := fakeItem{
+		UserID: 1,
+	}
+
+	ctx := context.Background()
+	emptyList := make([]*model.Item, 0)
+
+	s.Run("Cart not found", func() {
+		s.rep.EXPECT().FindByUser(gomock.Any(), fItem.UserID).Return(emptyList, repository.ErrNotFound)
+
+		_, err := s.cart.List(ctx, s.wp, fItem.UserID)
+		s.ErrorIs(err, ErrNotFound)
+	})
+
+	s.Run("Unknown error from repo", func() {
+		s.rep.EXPECT().FindByUser(gomock.Any(), fItem.UserID).Return(emptyList, fakeError)
+
+		_, err := s.cart.List(ctx, s.wp, fItem.UserID)
+		s.ErrorIs(err, fakeError)
+	})
+
+	fillList := []*model.Item{
+		{
+			ID:     1,
+			UserID: 1,
+			SKU:    1,
+			Count:  1,
+		},
+		{
+			ID:     2,
+			UserID: 2,
+			SKU:    2,
+			Count:  2,
+		},
+		{
+			ID:     3,
+			UserID: 3,
+			SKU:    3,
+			Count:  3,
+		},
+		{
+			ID:     4,
+			UserID: 4,
+			SKU:    4,
+			Count:  4,
+		},
+	}
+
+	s.Run("Successful result cart list with worker pool", func() {
+		fakeProductInfo := model.ProductInfo{
+			Name:  "",
+			Price: 0,
+		}
+
+		fakeResults := make(chan *worker_pool.Result)
+
+		s.rep.EXPECT().FindByUser(gomock.Any(), fItem.UserID).Return(fillList, nil)
+		s.pim.EXPECT().GetProductInfo(gomock.Any(), gomock.Any()).Return(&fakeProductInfo, nil).MaxTimes(len(fillList))
+		s.wp.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, tasks <-chan worker_pool.Task, proc worker_pool.Processor) <-chan *worker_pool.Result {
+			go func() {
+				for {
+					select {
+					case <-ctx.Done():
+						return
+					case task, ok := <-tasks:
+						if !ok {
+							return
+						}
+						result := proc(ctx, task)
+						select {
+						case <-ctx.Done():
+							return
+						case fakeResults <- result:
+						}
+					}
+				}
+			}()
+
+			return fakeResults
+		}).MaxTimes(len(fillList))
+
+		_, err := s.cart.List(ctx, s.wp, fItem.UserID)
+		s.Require().NoError(err)
 	})
 }
 

@@ -19,10 +19,6 @@ var ErrEmptyCart = errors.New("empty cart")
 var ErrPIMProductNotFound = errors.New("pim product not found")
 var ErrPIMLowAvailability = errors.New("pim product low availability in stock")
 
-type WorkerPool interface {
-	Run(ctx context.Context, tasks <-chan worker_pool.Task, proc worker_pool.Processor) <-chan *worker_pool.Result
-}
-
 type PIMClient interface {
 	GetProductInfo(ctx context.Context, sku model.SKU) (*model.ProductInfo, error)
 }
@@ -83,7 +79,7 @@ func (c *Cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) e
 
 // List returns a detailed list of the cart items.
 // The items is a combination of cart values and product info from ProductService.
-func (c *Cart) List(ctx context.Context, wp WorkerPool, userID model.UserID) ([]*model.ItemDetail, error) {
+func (c *Cart) List(ctx context.Context, wp worker_pool.WorkerPool, userID model.UserID) ([]*model.ItemDetail, error) {
 	list, err := c.rep.FindByUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {

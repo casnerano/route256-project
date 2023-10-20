@@ -10,7 +10,7 @@ import (
 type Service interface {
 	Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint32) (*model.Item, error)
 	Delete(ctx context.Context, userID model.UserID, sku model.SKU) error
-	List(ctx context.Context, wp *worker_pool.WorkerPool, userID model.UserID) ([]*model.ItemDetail, error)
+	List(ctx context.Context, wp worker_pool.WorkerPool, userID model.UserID) ([]*model.ItemDetail, error)
 	Clear(ctx context.Context, userID model.UserID) error
 	Checkout(ctx context.Context, userID model.UserID) (model.OrderID, error)
 }

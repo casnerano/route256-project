@@ -12,47 +12,9 @@ import (
 	context "context"
 	reflect "reflect"
 	model "route256/cart/internal/model"
-	worker_pool "route256/cart/internal/service/cart/worker_pool"
 
 	gomock "go.uber.org/mock/gomock"
 )
-
-// MockWorkerPool is a mock of WorkerPool interface.
-type MockWorkerPool struct {
-	ctrl     *gomock.Controller
-	recorder *MockWorkerPoolMockRecorder
-}
-
-// MockWorkerPoolMockRecorder is the mock recorder for MockWorkerPool.
-type MockWorkerPoolMockRecorder struct {
-	mock *MockWorkerPool
-}
-
-// NewMockWorkerPool creates a new mock instance.
-func NewMockWorkerPool(ctrl *gomock.Controller) *MockWorkerPool {
-	mock := &MockWorkerPool{ctrl: ctrl}
-	mock.recorder = &MockWorkerPoolMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockWorkerPool) EXPECT() *MockWorkerPoolMockRecorder {
-	return m.recorder
-}
-
-// Run mocks base method.
-func (m *MockWorkerPool) Run(ctx context.Context, tasks <-chan worker_pool.Task, proc worker_pool.Processor) <-chan *worker_pool.Result {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Run", ctx, tasks, proc)
-	ret0, _ := ret[0].(<-chan *worker_pool.Result)
-	return ret0
-}
-
-// Run indicates an expected call of Run.
-func (mr *MockWorkerPoolMockRecorder) Run(ctx, tasks, proc any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockWorkerPool)(nil).Run), ctx, tasks, proc)
-}
 
 // MockPIMClient is a mock of PIMClient interface.
 type MockPIMClient struct {
