@@ -124,3 +124,5 @@ tests-cover:
 	go test -coverprofile=coverage.out ./... > /dev/null && go tool cover -func=coverage.out
 tests-cover-html:	tests-cover
 	go tool cover -html=coverage.out
+tests-integration:
+	go test -tags=integration -cover ./...
