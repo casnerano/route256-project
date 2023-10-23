@@ -1,5 +1,7 @@
 package cart
 
+//go:generate mockgen -destination=mock/cart.go -source=cart.go
+
 import (
 	"context"
 	"errors"
@@ -77,7 +79,7 @@ func (c *Cart) Delete(ctx context.Context, userID model.UserID, sku model.SKU) e
 
 // List returns a detailed list of the cart items.
 // The items is a combination of cart values and product info from ProductService.
-func (c *Cart) List(ctx context.Context, wp *worker_pool.WorkerPool, userID model.UserID) ([]*model.ItemDetail, error) {
+func (c *Cart) List(ctx context.Context, wp worker_pool.WorkerPool, userID model.UserID) ([]*model.ItemDetail, error) {
 	list, err := c.rep.FindByUser(ctx, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {

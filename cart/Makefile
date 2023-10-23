@@ -117,3 +117,12 @@ vendor-proto/validate:
 		mkdir -p vendor-proto/validate
 		mv vendor-proto/tmp/validate vendor-proto/
 		rm -rf vendor-proto/tmp
+
+tests:
+	go test -cover ./...
+tests-cover:
+	go test -coverprofile=coverage.out ./... > /dev/null && go tool cover -func=coverage.out
+tests-cover-html:	tests-cover
+	go tool cover -html=coverage.out
+tests-integration:
+	go test -tags=integration -cover ./...
