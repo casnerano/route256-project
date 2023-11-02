@@ -10,4 +10,4 @@ COPY /loms/migrations/postgres ./migrations/loms
 COPY /infrastructure/migration/start.sh ./start.sh
 RUN chmod +x /app/start.sh
 
-CMD ["/app/start.sh"]
+CMD ["bash", "/app/start.sh"]

@@ -36,6 +36,7 @@ type application struct {
 	config        *config.Config
 	server        *server.Server
 	transactor    repository.Transactor
+	statusSender  order.StatusSender
 	depRepository *depRepository
 	depService    *depService
 	depWorker     *depWorker
@@ -63,13 +64,26 @@ func NewApp() (*application, error) {
 	sqlTransactor := sqlstore.NewTransactor(pool)
 	app.transactor = sqlTransactor
 
+	app.statusSender, err = order.NewKafkaStatusSender(
+		app.config.Order.StatusSender.Brokers,
+		app.config.Order.StatusSender.Topic,
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	app.depRepository = &depRepository{
 		order: sqlstore.NewOrderRepository(sqlTransactor),
 		stock: sqlstore.NewStockRepository(sqlTransactor),
 	}
 
 	app.depService = &depService{
-		order: order.New(app.transactor, app.depRepository.order, app.depRepository.stock),
+		order: order.New(
+			app.statusSender,
+			app.transactor,
+			app.depRepository.order,
+			app.depRepository.stock,
+		),
 		stock: stock.New(app.depRepository.stock),
 	}
 
@@ -104,6 +118,10 @@ func (a *application) RunHTTPServer() error {
 }
 
 func (a *application) Shutdown() error {
+	if err := a.statusSender.Close(); err != nil {
+		return err
+	}
+
 	if err := a.server.ShutdownHTTP(); err != nil {
 		return err
 	}

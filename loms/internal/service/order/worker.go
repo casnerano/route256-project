@@ -20,7 +20,7 @@ func NewCancelUnpaidWorker(canceler Canceler, duration time.Duration) *CancelUnp
 }
 
 func (w *CancelUnpaidWorker) Run(ctx context.Context) error {
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	for {

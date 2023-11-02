@@ -8,9 +8,12 @@ services:
       - "3201:3200"
       - "8081:8080"
     depends_on:
-      - migration
-      - loms
-      - pim_rate_limiter
+      migration:
+        condition: service_completed_successfully
+      loms:
+        condition: service_started
+      pim_rate_limiter:
+        condition: service_started
     networks:
       - internal
 
@@ -21,7 +24,14 @@ services:
       - "3202:3200"
       - "8082:8080"
     depends_on:
-      - migration
+      migration:
+        condition: service_completed_successfully
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
     networks:
       - internal
 
@@ -52,7 +62,7 @@ services:
       - POSTGRES_DB_LOMS=${POSTGRES_DB_LOMS}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./infrastructure/postgres/initdb:/docker-entrypoint-initdb.d
+      - ./infrastructure/postgres/initdb/:/docker-entrypoint-initdb.d
     healthcheck:
       test: "pg_isready -d ${POSTGRES_DB_CART} -U ${POSTGRES_USER} && \ pg_isready -d ${POSTGRES_DB_LOMS} -U ${POSTGRES_USER}"
       interval: 5s
@@ -68,6 +78,7 @@ services:
       - DB_HOST=postgres
       - POOL_MODE=transaction
       - AUTH_TYPE=scram-sha-256
+      - MAX_PREPARED_STATEMENTS=10
     ports:
       - "5432:5432"
     depends_on:
@@ -107,7 +118,7 @@ services:
   kafka-1:
     image: confluentinc/cp-kafka:latest
     healthcheck:
-      test: ps augwwx | egrep [S]upportedKafka
+      test: ps augwwx | egrep upportedKafka
     depends_on:
       - zookeeper
     ports:
@@ -126,7 +137,7 @@ services:
   kafka-2:
     image: confluentinc/cp-kafka:latest
     healthcheck:
-      test: ps augwwx | egrep [S]upportedKafka
+      test: ps augwwx | egrep upportedKafka
     depends_on:
       - zookeeper
     ports:
@@ -135,7 +146,7 @@ services:
       KAFKA_BROKER_ID: 2
       KAFKA_LISTNERS: LISTNER_INT://kafka-2:29092,LISTENER_EXT://0.0.0.0:9092
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: LISTNER_INT://kafka-2:29091,LISTENER_EXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: LISTNER_INT://kafka-2:29092,LISTENER_EXT://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTNER_INT:PLAINTEXT,LISTENER_EXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTNER_INT
       ZOOKEEPER: zookeeper:2181
@@ -145,7 +156,7 @@ services:
   kafka-3:
     image: confluentinc/cp-kafka:latest
     healthcheck:
-      test: ps augwwx | egrep [S]upportedKafka
+      test: ps augwwx | egrep upportedKafka
     depends_on:
       - zookeeper
     ports:

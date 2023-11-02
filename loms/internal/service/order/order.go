@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"errors"
+	"fmt"
 	"route256/loms/internal/model"
 	"route256/loms/internal/repository"
 	"time"
@@ -18,16 +19,18 @@ var (
 )
 
 type Order struct {
-	transactor repository.Transactor
-	repOrder   repository.Order
-	repStock   repository.Stock
+	statusSender StatusSender
+	transactor   repository.Transactor
+	repOrder     repository.Order
+	repStock     repository.Stock
 }
 
-func New(transactor repository.Transactor, repOrder repository.Order, repStock repository.Stock) *Order {
+func New(statusSender StatusSender, transactor repository.Transactor, repOrder repository.Order, repStock repository.Stock) *Order {
 	return &Order{
-		transactor: transactor,
-		repOrder:   repOrder,
-		repStock:   repStock,
+		statusSender: statusSender,
+		transactor:   transactor,
+		repOrder:     repOrder,
+		repStock:     repStock,
 	}
 }
 
@@ -56,6 +59,10 @@ func (o *Order) Create(ctx context.Context, userID model.UserID, items []*model.
 
 	if err != nil {
 		return nil, err
+	}
+
+	if sendErr := o.statusSender.Send(createdOrder.ID, createdOrder.Status); sendErr != nil {
+		fmt.Println("Failed send create order status: ", sendErr.Error())
 	}
 
 	return createdOrder, nil
@@ -98,6 +105,12 @@ func (o *Order) Payment(ctx context.Context, orderID model.OrderID) error {
 		return o.repOrder.ChangeStatus(txCtx, orderID, model.OrderStatusPayed)
 	})
 
+	if err == nil {
+		if sendErr := o.statusSender.Send(foundOrder.ID, model.OrderStatusPayed); sendErr != nil {
+			fmt.Println("Failed send payment order status: ", sendErr.Error())
+		}
+	}
+
 	return err
 }
 
@@ -124,6 +137,12 @@ func (o *Order) Cancel(ctx context.Context, orderID model.OrderID) error {
 
 		return o.repOrder.ChangeStatus(txCtx, orderID, model.OrderStatusCanceled)
 	})
+
+	if err == nil {
+		if sendErr := o.statusSender.Send(foundOrder.ID, model.OrderStatusCanceled); sendErr != nil {
+			fmt.Println("Failed send cancel order status: ", sendErr.Error())
+		}
+	}
 
 	return err
 }
