@@ -35,6 +35,21 @@ services:
     networks:
       - internal
 
+  notification:
+    image: notification
+    build: ./notifications
+    ports:
+      - "8083:8080"
+    networks:
+      - internal
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
+
   migration:
     image: migration
     build:
@@ -179,9 +194,3 @@ volumes:
 networks:
   internal:
     driver: bridge
-
-  # notification:
-  #   image: notification
-  #   build: ./notification
-  #   ports:
-  #     - "8082:8082"
