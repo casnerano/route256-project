@@ -2,7 +2,7 @@ package order
 
 import (
 	"context"
-	"log"
+	"go.uber.org/zap"
 	"time"
 )
 
@@ -13,10 +13,11 @@ type Canceler interface {
 type CancelUnpaidWorker struct {
 	canceler Canceler
 	duration time.Duration
+	logger   *zap.Logger
 }
 
-func NewCancelUnpaidWorker(canceler Canceler, duration time.Duration) *CancelUnpaidWorker {
-	return &CancelUnpaidWorker{canceler: canceler, duration: duration}
+func NewCancelUnpaidWorker(canceler Canceler, duration time.Duration, logger *zap.Logger) *CancelUnpaidWorker {
+	return &CancelUnpaidWorker{canceler: canceler, duration: duration, logger: logger}
 }
 
 func (w *CancelUnpaidWorker) Run(ctx context.Context) error {
@@ -27,10 +28,10 @@ func (w *CancelUnpaidWorker) Run(ctx context.Context) error {
 		select {
 		case <-ticker.C:
 			if err := w.canceler.CancelUnpaidWithDuration(ctx, w.duration); err != nil {
-				log.Println("Failed cancel unpaid order:", err)
+				w.logger.Error("Failed cancel unpaid order.", zap.Error(err))
 			}
 		case <-ctx.Done():
-			log.Println("Cancel unpaid order worker stopped.")
+			w.logger.Info("Cancel unpaid order worker stopped.")
 			return nil
 		}
 	}

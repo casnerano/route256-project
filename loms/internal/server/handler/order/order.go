@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap"
 	"route256/loms/internal/model"
 	pb "route256/loms/pkg/proto/order/v1"
 )
@@ -17,10 +18,11 @@ type Service interface {
 type Handler struct {
 	pb.UnimplementedOrderServer
 	service Service
+	logger  *zap.Logger
 }
 
-func NewHandler(service Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service Service, logger *zap.Logger) *Handler {
+	return &Handler{service: service, logger: logger}
 }
 
 func (h *Handler) transformStatus(s model.OrderStatus) (pb.Status, error) {

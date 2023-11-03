@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository"
 	"route256/cart/internal/repository/sqlstore"
@@ -11,6 +12,7 @@ import (
 	"route256/cart/internal/service/client/loms"
 	"route256/cart/internal/service/client/pim"
 	"route256/cart/pkg/limiter"
+	"route256/cart/pkg/logger"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -31,6 +33,7 @@ type application struct {
 	pimLimiter    *limiter.Limiter
 	depRepository *depRepository
 	depService    *depService
+	logger        *zap.Logger
 }
 
 func NewApp() (*application, error) {
@@ -38,6 +41,11 @@ func NewApp() (*application, error) {
 	app := application{}
 
 	app.config, err = config.New()
+	if err != nil {
+		return nil, err
+	}
+
+	app.logger, err = logger.New("cart")
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +103,7 @@ func NewApp() (*application, error) {
 
 func (a *application) init() error {
 	var err error
-	a.server, err = server.New(a.config.Server, a.depService.cart)
+	a.server, err = server.New(a.config.Server, a.depService.cart, a.logger)
 
 	return err
 }

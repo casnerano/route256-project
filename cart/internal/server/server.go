@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"go.uber.org/zap"
 	"net"
 	"net/http"
 	"route256/cart/internal/config"
@@ -31,12 +32,14 @@ type Server struct {
 	grpc     *grpc.Server
 	http     *http.Server
 	service  service
+	logger   *zap.Logger
 }
 
-func New(c config.Server, service service) (*Server, error) {
+func New(c config.Server, service service, logger *zap.Logger) (*Server, error) {
 	s := &Server{
 		config:  c,
 		service: service,
+		logger:  logger,
 	}
 
 	if err := s.initGRPC(); err != nil {
@@ -51,19 +54,27 @@ func New(c config.Server, service service) (*Server, error) {
 }
 
 func (s *Server) RunGRPC() error {
+	s.logger.Info("Running grpc server.")
+
 	return s.grpc.Serve(s.listener)
 }
 
 func (s *Server) RunHTTP() error {
+	s.logger.Info("Running http server.")
+
 	return s.http.ListenAndServe()
 }
 
 func (s *Server) ShutdownGRPC() error {
+	s.logger.Info("Shutdown grpc server.")
+
 	s.grpc.GracefulStop()
 	return nil
 }
 
 func (s *Server) ShutdownHTTP() error {
+	s.logger.Info("Shutdown http server.")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -81,7 +92,7 @@ func (s *Server) initGRPC() error {
 	s.listener = listener
 
 	reflection.Register(s.grpc)
-	pb.RegisterCartServer(s.grpc, handlerCart.NewHandler(s.service))
+	pb.RegisterCartServer(s.grpc, handlerCart.NewHandler(s.service, s.logger))
 
 	return nil
 }

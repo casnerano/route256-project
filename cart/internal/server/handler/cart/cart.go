@@ -2,6 +2,7 @@ package cart
 
 import (
 	"context"
+	"go.uber.org/zap"
 	"route256/cart/internal/model"
 	"route256/cart/internal/service/cart/worker_pool"
 	pb "route256/cart/pkg/proto/cart/v1"
@@ -18,8 +19,9 @@ type Service interface {
 type Handler struct {
 	pb.UnimplementedCartServer
 	service Service
+	logger  *zap.Logger
 }
 
-func NewHandler(service Service) *Handler {
-	return &Handler{service: service}
+func NewHandler(service Service, logger *zap.Logger) *Handler {
+	return &Handler{service: service, logger: logger}
 }

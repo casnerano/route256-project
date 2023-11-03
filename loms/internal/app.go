@@ -3,6 +3,8 @@ package internal
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
+	"route256/cart/pkg/logger"
 	"route256/loms/internal/config"
 	"route256/loms/internal/repository"
 	"route256/loms/internal/repository/sqlstore"
@@ -40,6 +42,7 @@ type application struct {
 	depRepository *depRepository
 	depService    *depService
 	depWorker     *depWorker
+	logger        *zap.Logger
 }
 
 func NewApp() (*application, error) {
@@ -47,6 +50,11 @@ func NewApp() (*application, error) {
 	app := application{}
 
 	app.config, err = config.New()
+	if err != nil {
+		return nil, err
+	}
+
+	app.logger, err = logger.New("loms")
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +99,7 @@ func NewApp() (*application, error) {
 		cancelUnpaidOrder: order.NewCancelUnpaidWorker(
 			app.depService.order,
 			time.Duration(app.config.Order.CancelUnpaidTimeout)*time.Second,
+			app.logger,
 		),
 	}
 
