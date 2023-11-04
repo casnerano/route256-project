@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"net"
 	"net/http"
 	"route256/cart/internal/config"
@@ -13,6 +12,8 @@ import (
 	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -82,7 +83,10 @@ func (s *Server) ShutdownHTTP() error {
 }
 
 func (s *Server) initGRPC() error {
-	s.grpc = grpc.NewServer()
+	s.grpc = grpc.NewServer(
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+	)
 
 	listener, err := net.Listen("tcp", s.config.AddrGRPC)
 	if err != nil {

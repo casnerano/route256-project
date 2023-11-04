@@ -3,9 +3,7 @@ package logger
 import "go.uber.org/zap"
 
 func New(name string) (*zap.Logger, error) {
-	var logConfig zap.Config
-
-	logConfig = zap.NewProductionConfig()
+	logConfig := zap.NewProductionConfig()
 	logConfig.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 
 	logger, err := logConfig.Build()

@@ -3,8 +3,6 @@ package cart
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/suite"
-	"go.uber.org/mock/gomock"
 	"route256/cart/internal/model"
 	"route256/cart/internal/repository"
 	mock_repository "route256/cart/internal/repository/mock"
@@ -13,6 +11,9 @@ import (
 	mock_worker_pool "route256/cart/internal/service/cart/worker_pool/mock"
 	"route256/cart/internal/service/client/pim"
 	"testing"
+
+	"github.com/stretchr/testify/suite"
+	"go.uber.org/mock/gomock"
 )
 
 var fakeError = errors.New("fake error")

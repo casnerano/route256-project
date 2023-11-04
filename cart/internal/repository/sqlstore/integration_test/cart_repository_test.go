@@ -4,12 +4,13 @@ package integration_test
 
 import (
 	"context"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/stretchr/testify/suite"
 	"route256/cart/internal/model"
 	"route256/cart/internal/repository"
 	"route256/cart/internal/repository/sqlstore"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/suite"
 )
 
 var defaultDatabaseDSN = "postgres://user:password@pgbouncer:5432/cart?sslmode=disable"

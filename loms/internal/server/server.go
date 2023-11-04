@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.uber.org/zap"
 	"net"
 	"net/http"
 	"route256/loms/internal/config"
@@ -40,13 +42,15 @@ type Server struct {
 	http         *http.Server
 	orderService orderService
 	stockService stockService
+	logger       *zap.Logger
 }
 
-func New(c config.Server, order orderService, stock stockService) (*Server, error) {
+func New(c config.Server, order orderService, stock stockService, logger *zap.Logger) (*Server, error) {
 	s := &Server{
 		config:       c,
 		orderService: order,
 		stockService: stock,
+		logger:       logger,
 	}
 
 	if err := s.initGRPC(); err != nil {
@@ -81,7 +85,10 @@ func (s *Server) ShutdownHTTP() error {
 }
 
 func (s *Server) initGRPC() error {
-	s.grpc = grpc.NewServer()
+	s.grpc = grpc.NewServer(
+		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+	)
 
 	listener, err := net.Listen("tcp", s.config.AddrGRPC)
 	if err != nil {
@@ -91,8 +98,8 @@ func (s *Server) initGRPC() error {
 	s.listener = listener
 
 	reflection.Register(s.grpc)
-	pbOrder.RegisterOrderServer(s.grpc, orderHandler.NewHandler(s.orderService))
-	pbStock.RegisterStockServer(s.grpc, stockHandler.NewHandler(s.stockService))
+	pbOrder.RegisterOrderServer(s.grpc, orderHandler.NewHandler(s.orderService, s.logger))
+	pbStock.RegisterStockServer(s.grpc, stockHandler.NewHandler(s.stockService, s.logger))
 
 	return nil
 }

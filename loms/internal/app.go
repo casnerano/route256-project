@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"route256/cart/pkg/logger"
 	"route256/loms/internal/config"
@@ -11,6 +12,7 @@ import (
 	"route256/loms/internal/server"
 	"route256/loms/internal/service/order"
 	"route256/loms/internal/service/stock"
+	"route256/loms/pkg/trace"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -43,6 +45,7 @@ type application struct {
 	depService    *depService
 	depWorker     *depWorker
 	logger        *zap.Logger
+	trace         oteltrace.Tracer
 }
 
 func NewApp() (*application, error) {
@@ -55,6 +58,11 @@ func NewApp() (*application, error) {
 	}
 
 	app.logger, err = logger.New("loms")
+	if err != nil {
+		return nil, err
+	}
+
+	app.trace, err = trace.New("http://jaeger:14268/api/traces", "loms")
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +121,7 @@ func NewApp() (*application, error) {
 
 func (a *application) init() error {
 	var err error
-	a.server, err = server.New(a.config.Server, a.depService.order, a.depService.stock)
+	a.server, err = server.New(a.config.Server, a.depService.order, a.depService.stock, a.logger)
 
 	return err
 }

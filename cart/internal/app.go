@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository"
 	"route256/cart/internal/repository/sqlstore"
@@ -13,8 +12,11 @@ import (
 	"route256/cart/internal/service/client/pim"
 	"route256/cart/pkg/limiter"
 	"route256/cart/pkg/logger"
+	"route256/cart/pkg/trace"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	oteltrace "go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 type depRepository struct {
@@ -34,6 +36,7 @@ type application struct {
 	depRepository *depRepository
 	depService    *depService
 	logger        *zap.Logger
+	trace         oteltrace.Tracer
 }
 
 func NewApp() (*application, error) {
@@ -46,6 +49,11 @@ func NewApp() (*application, error) {
 	}
 
 	app.logger, err = logger.New("cart")
+	if err != nil {
+		return nil, err
+	}
+
+	app.trace, err = trace.New("http://jaeger:14268/api/traces", "cart")
 	if err != nil {
 		return nil, err
 	}

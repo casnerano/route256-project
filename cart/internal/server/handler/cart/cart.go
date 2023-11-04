@@ -2,10 +2,11 @@ package cart
 
 import (
 	"context"
-	"go.uber.org/zap"
 	"route256/cart/internal/model"
 	"route256/cart/internal/service/cart/worker_pool"
 	pb "route256/cart/pkg/proto/cart/v1"
+
+	"go.uber.org/zap"
 )
 
 type Service interface {
