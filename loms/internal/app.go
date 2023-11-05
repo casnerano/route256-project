@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/exaring/otelpgx"
-	"github.com/jackc/pgx/v5"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"route256/cart/pkg/logger"
@@ -80,7 +79,7 @@ func NewApp() (*application, error) {
 	}
 
 	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer()
-	pgxConfig.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeExec
+	//pgxConfig.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	pool, err = pgxpool.NewWithConfig(context.Background(), pgxConfig)
 	if err != nil {

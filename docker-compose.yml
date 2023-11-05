@@ -93,7 +93,6 @@ services:
       - DB_HOST=postgres
       - POOL_MODE=transaction
       - AUTH_TYPE=scram-sha-256
-      - MAX_PREPARED_STATEMENTS=10
     ports:
       - "5432:5432"
     depends_on:
@@ -145,6 +144,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: LISTNER_INT://kafka-1:29091,LISTENER_EXT://localhost:9091
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTNER_INT:PLAINTEXT,LISTENER_EXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTNER_INT
+      KAFKA_LOG4J_LOGGERS: kafka=ERROR, kafka.cluster=ERROR, kafka.controller=ERROR, kafka.log=ERROR, kafka.server=ERROR, kafka.zookeeper=ERROR
       ZOOKEEPER: zookeeper:2181
     networks:
       - internal
@@ -164,6 +164,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: LISTNER_INT://kafka-2:29092,LISTENER_EXT://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTNER_INT:PLAINTEXT,LISTENER_EXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTNER_INT
+      KAFKA_LOG4J_LOGGERS: kafka=ERROR, kafka.cluster=ERROR, kafka.controller=ERROR, kafka.log=ERROR, kafka.server=ERROR, kafka.zookeeper=ERROR
       ZOOKEEPER: zookeeper:2181
     networks:
       - internal
@@ -183,6 +184,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: LISTNER_INT://kafka-3:29093,LISTENER_EXT://localhost:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTNER_INT:PLAINTEXT,LISTENER_EXT:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTNER_INT
+      KAFKA_LOG4J_LOGGERS: kafka=ERROR, kafka.cluster=ERROR, kafka.controller=ERROR, kafka.log=ERROR, kafka.server=ERROR, kafka.zookeeper=ERROR
       ZOOKEEPER: zookeeper:2181
     networks:
       - internal

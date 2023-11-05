@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/exaring/otelpgx"
-	"github.com/jackc/pgx/v5"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository"
 	"route256/cart/internal/repository/sqlstore"
@@ -73,7 +72,7 @@ func NewApp() (*application, error) {
 	}
 
 	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer()
-	pgxConfig.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeExec
+	//pgxConfig.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	pool, err = pgxpool.NewWithConfig(context.Background(), pgxConfig)
 	if err != nil {
