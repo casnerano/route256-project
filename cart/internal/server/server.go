@@ -2,12 +2,14 @@ package server
 
 import (
 	"context"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net"
 	"net/http"
 	"route256/cart/internal/config"
 	"route256/cart/internal/model"
 	handlerCart "route256/cart/internal/server/handler/cart"
 	"route256/cart/internal/service/cart/worker_pool"
+	"route256/cart/pkg/interceptor"
 	pb "route256/cart/pkg/proto/cart/v1"
 	"time"
 
@@ -84,7 +86,10 @@ func (s *Server) ShutdownHTTP() error {
 
 func (s *Server) initGRPC() error {
 	s.grpc = grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.ChainUnaryInterceptor(
+			interceptor.ServerUnaryMetric(),
+			otelgrpc.UnaryServerInterceptor(),
+		),
 		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
 	)
 
@@ -113,6 +118,8 @@ func (s *Server) initHTTP() error {
 	})
 
 	mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui", http.FileServer(http.Dir("./web/swagger-ui"))))
+
+	mux.Handle("/metrics", promhttp.Handler())
 
 	s.http = &http.Server{
 		Addr:    s.config.AddrHTTP,

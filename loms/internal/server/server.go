@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 	"net"
 	"net/http"
+	"route256/cart/pkg/interceptor"
 	"route256/loms/internal/config"
 	"route256/loms/internal/model"
 	orderHandler "route256/loms/internal/server/handler/order"
@@ -86,7 +87,10 @@ func (s *Server) ShutdownHTTP() error {
 
 func (s *Server) initGRPC() error {
 	s.grpc = grpc.NewServer(
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
+		grpc.ChainUnaryInterceptor(
+			interceptor.ServerUnaryMetric(),
+			otelgrpc.UnaryServerInterceptor(),
+		),
 		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
 	)
 
