@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"route256/cart/internal/model"
 	"route256/cart/pkg/interceptor"
 	"route256/cart/pkg/limiter"
@@ -25,6 +26,8 @@ func NewClient(addr string, limiter *limiter.Limiter) (*Client, error) {
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(interceptor.ClientUnaryRateLimiter(limiter)),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 	)
 	if err != nil {
 		return nil, err

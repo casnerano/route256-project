@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
+	"github.com/exaring/otelpgx"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository"
 	"route256/cart/internal/repository/sqlstore"
@@ -15,7 +16,7 @@ import (
 	"route256/cart/pkg/trace"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	oteltrace "go.opentelemetry.io/otel/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 )
 
@@ -36,7 +37,7 @@ type application struct {
 	depRepository *depRepository
 	depService    *depService
 	logger        *zap.Logger
-	trace         oteltrace.Tracer
+	traceProvider *sdktrace.TracerProvider
 }
 
 func NewApp() (*application, error) {
@@ -53,7 +54,7 @@ func NewApp() (*application, error) {
 		return nil, err
 	}
 
-	app.trace, err = trace.New("http://jaeger:14268/api/traces", "cart")
+	app.traceProvider, err = trace.NewTraceProvider("cart")
 	if err != nil {
 		return nil, err
 	}
@@ -65,10 +66,18 @@ func NewApp() (*application, error) {
 	}
 
 	var pool *pgxpool.Pool
-	pool, err = pgxpool.New(context.TODO(), app.config.Database.DSN)
+	pgxConfig, err := pgxpool.ParseConfig(app.config.Database.DSN)
 	if err != nil {
 		return nil, err
 	}
+
+	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer()
+
+	pool, err = pgxpool.NewWithConfig(context.Background(), pgxConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	cartRepo = sqlstore.NewCartRepository(pool)
 
 	app.pimLimiter, err = limiter.New(app.config.PIM.RateLimiterAddr)
@@ -125,6 +134,10 @@ func (a *application) RunHTTPServer() error {
 }
 
 func (a *application) Shutdown() error {
+	if err := a.traceProvider.Shutdown(context.Background()); err != nil {
+		return err
+	}
+
 	if err := a.depService.lomsClient.Close(); err != nil {
 		return err
 	}

@@ -3,16 +3,17 @@ package internal
 import (
 	"context"
 	"fmt"
-	oteltrace "go.opentelemetry.io/otel/trace"
+	"github.com/exaring/otelpgx"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"route256/cart/pkg/logger"
+	"route256/cart/pkg/trace"
 	"route256/loms/internal/config"
 	"route256/loms/internal/repository"
 	"route256/loms/internal/repository/sqlstore"
 	"route256/loms/internal/server"
 	"route256/loms/internal/service/order"
 	"route256/loms/internal/service/stock"
-	"route256/loms/pkg/trace"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -45,7 +46,7 @@ type application struct {
 	depService    *depService
 	depWorker     *depWorker
 	logger        *zap.Logger
-	trace         oteltrace.Tracer
+	traceProvider *sdktrace.TracerProvider
 }
 
 func NewApp() (*application, error) {
@@ -62,7 +63,7 @@ func NewApp() (*application, error) {
 		return nil, err
 	}
 
-	app.trace, err = trace.New("http://jaeger:14268/api/traces", "loms")
+	app.traceProvider, err = trace.NewTraceProvider("loms")
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +73,14 @@ func NewApp() (*application, error) {
 	}
 
 	var pool *pgxpool.Pool
-	pool, err = pgxpool.New(context.TODO(), app.config.Database.DSN)
+	pgxConfig, err := pgxpool.ParseConfig(app.config.Database.DSN)
+	if err != nil {
+		return nil, err
+	}
+
+	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer()
+
+	pool, err = pgxpool.NewWithConfig(context.Background(), pgxConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +143,10 @@ func (a *application) RunHTTPServer() error {
 }
 
 func (a *application) Shutdown() error {
+	if err := a.traceProvider.Shutdown(context.Background()); err != nil {
+		return err
+	}
+
 	if err := a.statusSender.Close(); err != nil {
 		return err
 	}
