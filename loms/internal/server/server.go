@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"net"
@@ -120,6 +121,8 @@ func (s *Server) initHTTP() error {
 	})
 
 	mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui", http.FileServer(http.Dir("./web/swagger-ui"))))
+
+	mux.Handle("/metrics", promhttp.Handler())
 
 	s.http = &http.Server{
 		Addr:    s.config.AddrHTTP,
