@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"route256/cart/pkg/logger"
@@ -24,24 +25,26 @@ type worker interface {
 }
 
 type depWorker struct {
-	cancelUnpaidOrder worker
+	cancelUnpaidOrder       worker
+	senderOrderStatusOutbox worker
 }
 
 type depRepository struct {
-	order repository.Order
-	stock repository.Stock
+	order             repository.Order
+	stock             repository.Stock
+	orderStatusOutbox repository.OrderStatusOutbox
 }
 
 type depService struct {
-	order *order.Order
-	stock *stock.Stock
+	order        *order.Order
+	stock        *stock.Stock
+	statusSender order.StatusSender
 }
 
 type application struct {
 	config        *config.Config
 	server        *server.Server
 	transactor    repository.Transactor
-	statusSender  order.StatusSender
 	depRepository *depRepository
 	depService    *depService
 	depWorker     *depWorker
@@ -79,7 +82,7 @@ func NewApp() (*application, error) {
 	}
 
 	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer()
-	//pgxConfig.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+	pgxConfig.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeDescribeExec
 
 	pool, err = pgxpool.NewWithConfig(context.Background(), pgxConfig)
 	if err != nil {
@@ -89,7 +92,13 @@ func NewApp() (*application, error) {
 	sqlTransactor := sqlstore.NewTransactor(pool)
 	app.transactor = sqlTransactor
 
-	app.statusSender, err = order.NewKafkaStatusSender(
+	app.depRepository = &depRepository{
+		order:             sqlstore.NewOrderRepository(sqlTransactor),
+		stock:             sqlstore.NewStockRepository(sqlTransactor),
+		orderStatusOutbox: sqlstore.NewOrderStatusOutboxRepository(sqlTransactor),
+	}
+
+	statusSender, err := order.NewKafkaStatusSender(
 		app.config.Order.StatusSender.Brokers,
 		app.config.Order.StatusSender.Topic,
 	)
@@ -97,25 +106,26 @@ func NewApp() (*application, error) {
 		return nil, err
 	}
 
-	app.depRepository = &depRepository{
-		order: sqlstore.NewOrderRepository(sqlTransactor),
-		stock: sqlstore.NewStockRepository(sqlTransactor),
-	}
-
 	app.depService = &depService{
 		order: order.New(
-			app.statusSender,
 			app.transactor,
 			app.depRepository.order,
 			app.depRepository.stock,
+			app.depRepository.orderStatusOutbox,
 		),
-		stock: stock.New(app.depRepository.stock),
+		stock:        stock.New(app.depRepository.stock),
+		statusSender: statusSender,
 	}
 
 	app.depWorker = &depWorker{
 		cancelUnpaidOrder: order.NewCancelUnpaidWorker(
 			app.depService.order,
 			time.Duration(app.config.Order.CancelUnpaidTimeout)*time.Second,
+			app.logger,
+		),
+		senderOrderStatusOutbox: order.NewStatusOutbox(
+			app.depRepository.orderStatusOutbox,
+			statusSender,
 			app.logger,
 		),
 	}
@@ -148,7 +158,7 @@ func (a *application) Shutdown() error {
 		return err
 	}
 
-	if err := a.statusSender.Close(); err != nil {
+	if err := a.depService.statusSender.Close(); err != nil {
 		return err
 	}
 
@@ -161,4 +171,8 @@ func (a *application) Shutdown() error {
 
 func (a *application) RunCancelUnpaidOrderWorker(ctx context.Context) error {
 	return a.depWorker.cancelUnpaidOrder.Run(ctx)
+}
+
+func (a *application) RunOutboxWorker(ctx context.Context) error {
+	return a.depWorker.senderOrderStatusOutbox.Run(ctx)
 }

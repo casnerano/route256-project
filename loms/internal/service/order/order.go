@@ -19,18 +19,18 @@ var (
 )
 
 type Order struct {
-	statusSender StatusSender
-	transactor   repository.Transactor
-	repOrder     repository.Order
-	repStock     repository.Stock
+	transactor           repository.Transactor
+	repOrder             repository.Order
+	repStock             repository.Stock
+	repOrderStatusOutbox repository.OrderStatusOutbox
 }
 
-func New(statusSender StatusSender, transactor repository.Transactor, repOrder repository.Order, repStock repository.Stock) *Order {
+func New(transactor repository.Transactor, repOrder repository.Order, repStock repository.Stock, repOrderStatusOutbox repository.OrderStatusOutbox) *Order {
 	return &Order{
-		statusSender: statusSender,
-		transactor:   transactor,
-		repOrder:     repOrder,
-		repStock:     repStock,
+		transactor:           transactor,
+		repOrder:             repOrder,
+		repStock:             repStock,
+		repOrderStatusOutbox: repOrderStatusOutbox,
 	}
 }
 
@@ -54,15 +54,15 @@ func (o *Order) Create(ctx context.Context, userID model.UserID, items []*model.
 			return err
 		}
 
+		if _, outboxErr := o.repOrderStatusOutbox.Add(txCtx, createdOrder.ID, createdOrder.Status); outboxErr != nil {
+			return fmt.Errorf("failed add order status to outbox: %w", outboxErr)
+		}
+
 		return nil
 	})
 
 	if err != nil {
 		return nil, err
-	}
-
-	if sendErr := o.statusSender.Send(createdOrder.ID, createdOrder.Status); sendErr != nil {
-		fmt.Println("Failed send create order status: ", sendErr.Error())
 	}
 
 	return createdOrder, nil
@@ -102,14 +102,16 @@ func (o *Order) Payment(ctx context.Context, orderID model.OrderID) error {
 			}
 		}
 
-		return o.repOrder.ChangeStatus(txCtx, orderID, model.OrderStatusPayed)
-	})
-
-	if err == nil {
-		if sendErr := o.statusSender.Send(foundOrder.ID, model.OrderStatusPayed); sendErr != nil {
-			fmt.Println("Failed send payment order status: ", sendErr.Error())
+		if orderErr := o.repOrder.ChangeStatus(txCtx, orderID, model.OrderStatusPayed); orderErr != nil {
+			return orderErr
 		}
-	}
+
+		if _, outboxErr := o.repOrderStatusOutbox.Add(txCtx, orderID, model.OrderStatusPayed); outboxErr != nil {
+			return fmt.Errorf("failed add order status to outbox: %w", outboxErr)
+		}
+
+		return nil
+	})
 
 	return err
 }
@@ -130,19 +132,21 @@ func (o *Order) Cancel(ctx context.Context, orderID model.OrderID) error {
 
 	err = o.transactor.RunRepeatableRead(ctx, func(txCtx context.Context) error {
 		for _, foundOrderItem := range foundOrder.Items {
-			if err = o.repStock.CancelReserve(txCtx, foundOrderItem.SKU, foundOrderItem.Count); err != nil {
+			if stockErr := o.repStock.CancelReserve(txCtx, foundOrderItem.SKU, foundOrderItem.Count); stockErr != nil {
 				return ErrCancelReserve
 			}
 		}
 
-		return o.repOrder.ChangeStatus(txCtx, orderID, model.OrderStatusCanceled)
-	})
-
-	if err == nil {
-		if sendErr := o.statusSender.Send(foundOrder.ID, model.OrderStatusCanceled); sendErr != nil {
-			fmt.Println("Failed send cancel order status: ", sendErr.Error())
+		if orderErr := o.repOrder.ChangeStatus(txCtx, orderID, model.OrderStatusCanceled); orderErr != nil {
+			return orderErr
 		}
-	}
+
+		if _, outboxErr := o.repOrderStatusOutbox.Add(txCtx, orderID, model.OrderStatusCanceled); outboxErr != nil {
+			return fmt.Errorf("failed add order status to outbox: %w", outboxErr)
+		}
+
+		return nil
+	})
 
 	return err
 }

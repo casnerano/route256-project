@@ -53,7 +53,7 @@ func (rep *orderStatusOutboxRepository) MarkAsDelivery(ctx context.Context, id i
 func (rep *orderStatusOutboxRepository) FindUndelivered(ctx context.Context) ([]*model.OrderStatusOutbox, error) {
 	rows, err := rep.provider.Store(ctx).Query(
 		ctx,
-		`SELECT id, order_id, order_status, is_delivery, created_at FROM "order_status_outbox" where is_delivery = false`,
+		`SELECT id, order_id, order_status, is_delivery, created_at FROM "order_status_outbox" where is_delivery = false order by id asc`,
 	)
 
 	if err != nil {

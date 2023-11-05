@@ -93,6 +93,7 @@ services:
       - DB_HOST=postgres
       - POOL_MODE=transaction
       - AUTH_TYPE=scram-sha-256
+      - MAX_PREPARED_STATEMENTS=100
     ports:
       - "5432:5432"
     depends_on:
