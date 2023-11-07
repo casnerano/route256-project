@@ -16,6 +16,12 @@ type Order interface {
 	FindByUnpaidStatusWithDuration(ctx context.Context, duration time.Duration) ([]*model.Order, error)
 }
 
+type OrderStatusOutbox interface {
+	Add(ctx context.Context, orderId model.OrderID, orderStatus model.OrderStatus) (*model.OrderStatusOutbox, error)
+	MarkAsDelivery(ctx context.Context, id int) error
+	FindUndelivered(ctx context.Context) ([]*model.OrderStatusOutbox, error)
+}
+
 type Stock interface {
 	FindBySKU(ctx context.Context, sku model.SKU) (*model.Stock, error)
 	AddReserve(ctx context.Context, sku model.SKU, count uint32) error

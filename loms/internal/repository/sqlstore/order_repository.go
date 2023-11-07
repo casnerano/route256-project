@@ -24,22 +24,23 @@ var _ repository.Order = (*orderRepository)(nil)
 
 func (rep *orderRepository) Add(ctx context.Context, userID model.UserID, items []*model.OrderItem) (*model.Order, error) {
 	order := model.Order{
-		Status: model.OrderStatusNew,
-		User:   userID,
-		Items:  items,
+		Status:    model.OrderStatusNew,
+		User:      userID,
+		Items:     items,
+		CreatedAt: time.Now(),
 	}
 
 	row := rep.provider.Store(ctx).QueryRow(
 		ctx,
-		`INSERT INTO "order" (user_id, status, items) VALUES ($1, $2, $3) RETURNING id, created_at`,
+		`INSERT INTO "order" (user_id, status, items, created_at) VALUES ($1, $2, $3, $4) RETURNING id`,
 		order.User,
 		order.Status,
 		order.Items,
+		order.CreatedAt.UTC(),
 	)
 
 	err := row.Scan(
 		&order.ID,
-		&order.CreatedAt,
 	)
 
 	if err != nil {
@@ -81,10 +82,11 @@ func (rep *orderRepository) ChangeStatus(ctx context.Context, id model.OrderID, 
 func (rep *orderRepository) FindByUnpaidStatusWithDuration(ctx context.Context, duration time.Duration) ([]*model.Order, error) {
 	rows, err := rep.provider.Store(ctx).Query(
 		ctx,
-		`SELECT id, user_id, status, items, created_at FROM "order" where status = $1 and created_at > $2`,
+		`SELECT id, user_id, status, items, created_at FROM "order" where status = $1 and created_at < $2`,
 		model.OrderStatusNew,
-		time.Now().Add(duration),
+		time.Now().UTC().Add(-duration),
 	)
+
 	if err != nil {
 		return nil, err
 	}

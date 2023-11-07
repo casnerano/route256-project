@@ -2,7 +2,6 @@ package worker_pool
 
 import (
 	"context"
-	"fmt"
 	"sync"
 )
 
@@ -36,9 +35,7 @@ func (wp *WorkerPool[Task, Result]) Run(ctx context.Context, tasks <-chan Task) 
 
 	for i := 0; i < wp.workerCount; i++ {
 		go func(index int) {
-			fmt.Printf("Runned worker #%d\n", index)
 			defer func() {
-				fmt.Printf("Finished worker #%d\n", index)
 				wg.Done()
 			}()
 
@@ -56,8 +53,6 @@ func (wp *WorkerPool[Task, Result]) Run(ctx context.Context, tasks <-chan Task) 
 						return
 					}
 
-					fmt.Printf("Worker #%d received %v\n", index, task)
-
 					// Processing task.
 					result := wp.processing(ctx, task)
 
@@ -69,7 +64,6 @@ func (wp *WorkerPool[Task, Result]) Run(ctx context.Context, tasks <-chan Task) 
 						return
 					// Processing the message via callback and send the result in the output channel.
 					case results <- result:
-						fmt.Printf("Worker #%d sent result %v\n", index, result)
 					}
 				}
 			}

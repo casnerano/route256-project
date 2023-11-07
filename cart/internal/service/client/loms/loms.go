@@ -2,6 +2,7 @@ package loms
 
 import (
 	"context"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"route256/cart/internal/model"
 	pbOrder "route256/loms/pkg/proto/order/v1"
 	pbStock "route256/loms/pkg/proto/stock/v1"
@@ -20,6 +21,8 @@ func NewClient(addr string) (*Client, error) {
 	grpcConn, err := grpc.Dial(
 		addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+		grpc.WithStreamInterceptor(otelgrpc.StreamClientInterceptor()),
 	)
 	if err != nil {
 		return nil, err

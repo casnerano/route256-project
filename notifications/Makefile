@@ -1,15 +1,15 @@
-CURDIR=$(shell pwd)
-BINDIR=${CURDIR}/bin
-GOVER=$(shell go version | perl -nle '/(go\d\S+)/; print $$1;')
-SMARTIMPORTS=${BINDIR}/smartimports_${GOVER}
-LINTVER=v1.51.1
-LINTBIN=${BINDIR}/lint_${GOVER}_${LINTVER}
+CUR_DIR=$(shell pwd)
+BIN_DIR=${CUR_DIR}/bin
+GO_VERSION=$(shell go version | perl -nle '/(go\d\S+)/; print $$1;')
+SMART_IMPORTS=${BIN_DIR}/smartimports_${GO_VERSION}
+LINT_VER=v1.51.1
+LINT_BIN=${BIN_DIR}/lint_${GO_VERSION}_${LINT_VER}
 PACKAGE=route256/notifications/cmd/app
 
 all: format build test lint
 
 build: bindir
-	go build -o ${BINDIR}/app ${PACKAGE}
+	go build -o ${BIN_DIR}/app ${PACKAGE}
 
 test:
 	go test ./...
@@ -18,23 +18,23 @@ run:
 	go run ${PACKAGE}
 
 lint: install-lint
-	${LINTBIN} run
+	${LINT_BIN} run
 
 precommit: format build test lint
 	echo "OK"
 
 bindir:
-	mkdir -p ${BINDIR}
+	mkdir -p ${BIN_DIR}
 
 format: install-smartimports
-	${SMARTIMPORTS} -exclude internal/mocks
+	${SMART_IMPORTS} -exclude internal/mocks
 
 install-lint: bindir
-	test -f ${LINTBIN} || \
-		(GOBIN=${BINDIR} go install github.com/golangci/golangci-lint/cmd/golangci-lint@${LINTVER} && \
-		mv ${BINDIR}/golangci-lint ${LINTBIN})
+	test -f ${LINT_BIN} || \
+		(GOBIN=${BIN_DIR} go install github.com/golangci/golangci-lint/cmd/golangci-lint@${LINT_VER} && \
+		mv ${BIN_DIR}/golangci-lint ${LINT_BIN})
 
 install-smartimports: bindir
-	test -f ${SMARTIMPORTS} || \
-		(GOBIN=${BINDIR} go install github.com/pav5000/smartimports/cmd/smartimports@latest && \
-		mv ${BINDIR}/smartimports ${SMARTIMPORTS})
+	test -f ${SMART_IMPORTS} || \
+		(GOBIN=${BIN_DIR} go install github.com/pav5000/smartimports/cmd/smartimports@latest && \
+		mv ${BIN_DIR}/smartimports ${SMART_IMPORTS})

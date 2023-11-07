@@ -42,7 +42,15 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err = app.RunCancelUnpaidOrderWorker(ctx); err != nil {
-			log.Fatal(fmt.Errorf("failed cancel unpaid worker: %w", err))
+			log.Fatal(fmt.Errorf("failed run cancel unpaid worker: %w", err))
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err = app.RunOutboxWorker(ctx); err != nil {
+			log.Fatal(fmt.Errorf("failed run order status outbox worker: %w", err))
 		}
 	}()
 

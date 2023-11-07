@@ -4,4 +4,10 @@ server:
 database:
   dsn: "postgres://user:password@pgbouncer:5432/loms?sslmode=disable"
 order:
-  cancel_unpaid_timeout: 600
+  cancel_unpaid_timeout: 30
+  status_sender:
+    brokers:
+      - kafka-1:29091
+      - kafka-2:29092
+      - kafka-3:29093
+    topic: order_status

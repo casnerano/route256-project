@@ -20,6 +20,10 @@ type Server struct {
 
 type Order struct {
 	CancelUnpaidTimeout uint64 `yaml:"cancel_unpaid_timeout"`
+	StatusSender        struct {
+		Brokers []string `yaml:"brokers"`
+		Topic   string   `yaml:"topic"`
+	} `yaml:"status_sender"`
 }
 
 type Config struct {
@@ -45,7 +49,9 @@ func New() (*Config, error) {
 func (c *Config) SetDefaultValues() {
 	c.Server.AddrGRPC = "0.0.0.0:3200"
 	c.Server.AddrHTTP = "0.0.0.0:8080"
-	c.Order.CancelUnpaidTimeout = 600
+	c.Order.CancelUnpaidTimeout = 30
+	c.Order.StatusSender.Brokers = []string{"kafka-1:9091", "kafka-2:9092", "kafka-3:9093"}
+	c.Order.StatusSender.Topic = "order_status"
 }
 
 func (c *Config) SetFileValues(filename string) error {

@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap"
 	"route256/loms/internal/model"
 	orderService "route256/loms/internal/service/order"
 	pb "route256/loms/pkg/proto/order/v1"
@@ -34,6 +35,7 @@ func (h *Handler) Create(ctx context.Context, in *pb.CreateRequest) (*pb.CreateR
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
 
+		h.logger.Error("Internal error.", zap.Error(err))
 		return nil, status.Error(codes.Internal, codes.Internal.String())
 	}
 

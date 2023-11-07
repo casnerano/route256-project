@@ -1,0 +1,7 @@
+order_status:
+  brokers:
+    - kafka-1:29091
+    - kafka-2:29092
+    - kafka-3:29093
+  topics:
+    - order_status

@@ -3,6 +3,8 @@ package internal
 import (
 	"context"
 	"fmt"
+	"github.com/exaring/otelpgx"
+	"github.com/jackc/pgx/v5"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository"
 	"route256/cart/internal/repository/sqlstore"
@@ -11,8 +13,12 @@ import (
 	"route256/cart/internal/service/client/loms"
 	"route256/cart/internal/service/client/pim"
 	"route256/cart/pkg/limiter"
+	"route256/cart/pkg/logger"
+	"route256/cart/pkg/trace"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.uber.org/zap"
 )
 
 type depRepository struct {
@@ -31,6 +37,8 @@ type application struct {
 	pimLimiter    *limiter.Limiter
 	depRepository *depRepository
 	depService    *depService
+	logger        *zap.Logger
+	traceProvider *sdktrace.TracerProvider
 }
 
 func NewApp() (*application, error) {
@@ -42,6 +50,16 @@ func NewApp() (*application, error) {
 		return nil, err
 	}
 
+	app.logger, err = logger.New("cart")
+	if err != nil {
+		return nil, err
+	}
+
+	app.traceProvider, err = trace.NewTraceProvider("cart")
+	if err != nil {
+		return nil, err
+	}
+
 	var cartRepo repository.Cart
 
 	if app.config.Database.DSN == "" {
@@ -49,10 +67,19 @@ func NewApp() (*application, error) {
 	}
 
 	var pool *pgxpool.Pool
-	pool, err = pgxpool.New(context.TODO(), app.config.Database.DSN)
+	pgxConfig, err := pgxpool.ParseConfig(app.config.Database.DSN)
 	if err != nil {
 		return nil, err
 	}
+
+	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer()
+	pgxConfig.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeDescribeExec
+
+	pool, err = pgxpool.NewWithConfig(context.Background(), pgxConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	cartRepo = sqlstore.NewCartRepository(pool)
 
 	app.pimLimiter, err = limiter.New(app.config.PIM.RateLimiterAddr)
@@ -95,7 +122,7 @@ func NewApp() (*application, error) {
 
 func (a *application) init() error {
 	var err error
-	a.server, err = server.New(a.config.Server, a.depService.cart)
+	a.server, err = server.New(a.config.Server, a.depService.cart, a.logger)
 
 	return err
 }
@@ -109,6 +136,10 @@ func (a *application) RunHTTPServer() error {
 }
 
 func (a *application) Shutdown() error {
+	if err := a.traceProvider.Shutdown(context.Background()); err != nil {
+		return err
+	}
+
 	if err := a.depService.lomsClient.Close(); err != nil {
 		return err
 	}

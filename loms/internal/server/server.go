@@ -2,8 +2,12 @@ package server
 
 import (
 	"context"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.uber.org/zap"
 	"net"
 	"net/http"
+	"route256/cart/pkg/interceptor"
 	"route256/loms/internal/config"
 	"route256/loms/internal/model"
 	orderHandler "route256/loms/internal/server/handler/order"
@@ -40,13 +44,15 @@ type Server struct {
 	http         *http.Server
 	orderService orderService
 	stockService stockService
+	logger       *zap.Logger
 }
 
-func New(c config.Server, order orderService, stock stockService) (*Server, error) {
+func New(c config.Server, order orderService, stock stockService, logger *zap.Logger) (*Server, error) {
 	s := &Server{
 		config:       c,
 		orderService: order,
 		stockService: stock,
+		logger:       logger,
 	}
 
 	if err := s.initGRPC(); err != nil {
@@ -81,7 +87,13 @@ func (s *Server) ShutdownHTTP() error {
 }
 
 func (s *Server) initGRPC() error {
-	s.grpc = grpc.NewServer()
+	s.grpc = grpc.NewServer(
+		grpc.ChainUnaryInterceptor(
+			interceptor.ServerUnaryMetric(),
+			otelgrpc.UnaryServerInterceptor(),
+		),
+		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
+	)
 
 	listener, err := net.Listen("tcp", s.config.AddrGRPC)
 	if err != nil {
@@ -91,8 +103,8 @@ func (s *Server) initGRPC() error {
 	s.listener = listener
 
 	reflection.Register(s.grpc)
-	pbOrder.RegisterOrderServer(s.grpc, orderHandler.NewHandler(s.orderService))
-	pbStock.RegisterStockServer(s.grpc, stockHandler.NewHandler(s.stockService))
+	pbOrder.RegisterOrderServer(s.grpc, orderHandler.NewHandler(s.orderService, s.logger))
+	pbStock.RegisterStockServer(s.grpc, stockHandler.NewHandler(s.stockService, s.logger))
 
 	return nil
 }
@@ -109,6 +121,8 @@ func (s *Server) initHTTP() error {
 	})
 
 	mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui", http.FileServer(http.Dir("./web/swagger-ui"))))
+
+	mux.Handle("/metrics", promhttp.Handler())
 
 	s.http = &http.Server{
 		Addr:    s.config.AddrHTTP,
