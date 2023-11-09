@@ -3,15 +3,21 @@ package internal
 import (
 	"context"
 	"fmt"
+
 	"github.com/exaring/otelpgx"
 	"github.com/jackc/pgx/v5"
+	"github.com/redis/go-redis/v9"
 	"route256/cart/internal/config"
 	"route256/cart/internal/repository"
 	"route256/cart/internal/repository/sqlstore"
 	"route256/cart/internal/server"
+	cachePool "route256/cart/internal/service/cache/pool"
+	"route256/cart/internal/service/cache/pool/shard_strategy"
+	"route256/cart/internal/service/cache/provider"
 	"route256/cart/internal/service/cart"
 	"route256/cart/internal/service/client/loms"
 	"route256/cart/internal/service/client/pim"
+	"route256/cart/pkg/cache"
 	"route256/cart/pkg/limiter"
 	"route256/cart/pkg/logger"
 	"route256/cart/pkg/trace"
@@ -39,6 +45,7 @@ type application struct {
 	depService    *depService
 	logger        *zap.Logger
 	traceProvider *sdktrace.TracerProvider
+	cache         cache.Cache
 }
 
 func NewApp() (*application, error) {
@@ -65,6 +72,17 @@ func NewApp() (*application, error) {
 	if app.config.Database.DSN == "" {
 		return nil, fmt.Errorf("database dsn is required")
 	}
+
+	shardsCount := len(app.config.Cache.Shards)
+	redisProviders := make([]cache.Cache, 0, shardsCount)
+	for _, addr := range app.config.Cache.Shards {
+		redisProviders = append(
+			redisProviders,
+			provider.NewRedis(redis.NewClient(&redis.Options{Addr: addr})),
+		)
+	}
+
+	app.cache = cachePool.New(shard_strategy.NewHash(shardsCount), redisProviders...)
 
 	var pool *pgxpool.Pool
 	pgxConfig, err := pgxpool.ParseConfig(app.config.Database.DSN)
