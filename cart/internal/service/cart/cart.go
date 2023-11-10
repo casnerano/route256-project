@@ -4,14 +4,18 @@ package cart
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
+	"sync"
+
+	"go.uber.org/zap"
 	"route256/cart/internal/model"
 	"route256/cart/internal/repository"
 	"route256/cart/internal/service/cart/worker_pool"
 	"route256/cart/internal/service/client/pim"
-	"sync"
+	"route256/cart/pkg/cache"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -29,21 +33,25 @@ type LOMSClient interface {
 }
 
 type Cart struct {
-	rep  repository.Cart
-	pim  PIMClient
-	loms LOMSClient
+	rep    repository.Cart
+	pim    PIMClient
+	loms   LOMSClient
+	cache  cache.Cache
+	logger *zap.Logger
 }
 
-func New(rep repository.Cart, pim PIMClient, loms LOMSClient) *Cart {
+func New(rep repository.Cart, pim PIMClient, loms LOMSClient, cache cache.Cache, logger *zap.Logger) *Cart {
 	return &Cart{
-		rep:  rep,
-		pim:  pim,
-		loms: loms,
+		rep:    rep,
+		pim:    pim,
+		loms:   loms,
+		cache:  cache,
+		logger: logger,
 	}
 }
 
 func (c *Cart) Add(ctx context.Context, userID model.UserID, sku model.SKU, count uint32) (*model.Item, error) {
-	_, err := c.pim.GetProductInfo(ctx, sku)
+	_, err := c.getProductInfo(ctx, sku)
 	if err != nil {
 		if errors.Is(err, pim.ErrProductNotFound) {
 			return nil, ErrPIMProductNotFound
@@ -91,7 +99,7 @@ func (c *Cart) List(ctx context.Context, wp worker_pool.WorkerPool, userID model
 
 	// Function for processing task in worker.
 	processor := func(ctx context.Context, task worker_pool.Task) *worker_pool.Result {
-		productInfo, err := c.pim.GetProductInfo(ctx, task.SKU)
+		productInfo, err := c.getProductInfo(ctx, task.SKU)
 		if err != nil {
 			log.Println("Failed processing task in worker pool: ", err)
 			return nil
@@ -201,4 +209,45 @@ func (c *Cart) Checkout(ctx context.Context, userID model.UserID) (model.OrderID
 	}
 
 	return orderID, nil
+}
+
+func (c *Cart) getProductInfo(ctx context.Context, sku model.SKU) (*model.ProductInfo, error) {
+	key := fmt.Sprint(sku)
+
+	cacheData, err := c.cache.Get(ctx, key)
+	if err != nil {
+		c.logger.Error("Failed get data from cache.", zap.Error(err))
+	}
+
+	var data *model.ProductInfo
+
+	if cacheData == nil {
+		data, err = c.pim.GetProductInfo(ctx, sku)
+		if err != nil {
+			return nil, err
+		}
+
+		var bData []byte
+		bData, err = json.Marshal(data)
+		if err != nil {
+			c.logger.Error("Failed marshal data.", zap.Error(err))
+		} else {
+			if err = c.cache.Set(ctx, key, string(bData)); err != nil {
+				c.logger.Error("Failed set data to cache.", zap.Error(err))
+			}
+		}
+
+		return data, nil
+	}
+
+	if err = json.Unmarshal([]byte(*cacheData), data); err != nil {
+		c.logger.Error("Failed unmarshal data.", zap.Error(err))
+
+		data, err = c.pim.GetProductInfo(ctx, sku)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return data, nil
 }

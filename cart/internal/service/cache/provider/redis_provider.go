@@ -26,13 +26,15 @@ func (r Redis) Has(ctx context.Context, key string) (bool, error) {
 	return count > 0, nil
 }
 
-func (r Redis) Get(ctx context.Context, key string) (string, error) {
+func (r Redis) Get(ctx context.Context, key string) (*string, error) {
 	value, err := r.client.Get(ctx, key).Result()
-	if err != nil {
-		return "", err
+	if err == redis.Nil {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
 	}
 
-	return value, nil
+	return &value, nil
 }
 
 func (r Redis) Set(ctx context.Context, key string, value string) error {

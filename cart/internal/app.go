@@ -128,6 +128,8 @@ func NewApp() (*application, error) {
 		app.depRepository.cart,
 		app.depService.pimClient,
 		app.depService.lomsClient,
+		app.cache,
+		app.logger,
 	)
 
 	err = app.init()

@@ -23,7 +23,7 @@ func (p *Pool) Has(ctx context.Context, key string) (bool, error) {
 	return p.getProvider(key).Has(ctx, key)
 }
 
-func (p *Pool) Get(ctx context.Context, key string) (string, error) {
+func (p *Pool) Get(ctx context.Context, key string) (*string, error) {
 	return p.getProvider(key).Get(ctx, key)
 }
 
