@@ -1,5 +1,7 @@
 package cache
 
+//go:generate mockgen -destination=mock/cache.go -source=cache.go
+
 import "context"
 
 type Cache interface {
