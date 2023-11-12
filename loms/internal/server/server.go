@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"net"
 	"net/http"
+	"net/http/pprof"
 	"route256/cart/pkg/interceptor"
 	"route256/loms/internal/config"
 	"route256/loms/internal/model"
@@ -123,6 +124,12 @@ func (s *Server) initHTTP() error {
 	mux.Handle("/swagger-ui/", http.StripPrefix("/swagger-ui", http.FileServer(http.Dir("./web/swagger-ui"))))
 
 	mux.Handle("/metrics", promhttp.Handler())
+
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
 	s.http = &http.Server{
 		Addr:    s.config.AddrHTTP,

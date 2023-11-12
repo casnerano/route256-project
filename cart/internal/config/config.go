@@ -30,6 +30,9 @@ type Config struct {
 		Addr            string `yaml:"addr"`
 		RateLimiterAddr string `yaml:"rate_limiter_addr"`
 	} `yaml:"pim"`
+	Cache struct {
+		Shards []string `yaml:"shards"`
+	} `yaml:"cache"`
 }
 
 func New() (*Config, error) {
@@ -50,6 +53,7 @@ func (c *Config) SetDefaultValues() {
 	c.LOMS.Addr = "loms:3200"
 	c.PIM.Addr = "route256.pavl.uk:8082"
 	c.PIM.RateLimiterAddr = "pim_rate_limiter:3000"
+	c.Cache.Shards = []string{"redis1:6379", "redis2:6379"}
 }
 
 func (c *Config) SetFileValues(filename string) error {

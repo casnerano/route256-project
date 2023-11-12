@@ -3,6 +3,7 @@ package cart
 import (
 	"context"
 	"errors"
+	"go.uber.org/zap"
 	"route256/cart/internal/model"
 	"route256/cart/internal/repository"
 	mock_repository "route256/cart/internal/repository/mock"
@@ -10,6 +11,7 @@ import (
 	"route256/cart/internal/service/cart/worker_pool"
 	mock_worker_pool "route256/cart/internal/service/cart/worker_pool/mock"
 	"route256/cart/internal/service/client/pim"
+	mock_cache "route256/cart/pkg/cache/mock"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -25,11 +27,12 @@ type fakeItem struct {
 
 type CartTestSuite struct {
 	suite.Suite
-	cart *Cart
-	rep  *mock_repository.MockCart
-	pim  *mock_cart.MockPIMClient
-	loms *mock_cart.MockLOMSClient
-	wp   *mock_worker_pool.MockWorkerPool
+	cart  *Cart
+	rep   *mock_repository.MockCart
+	pim   *mock_cart.MockPIMClient
+	loms  *mock_cart.MockLOMSClient
+	cache *mock_cache.MockCache
+	wp    *mock_worker_pool.MockWorkerPool
 }
 
 func (s *CartTestSuite) SetupSuite() {
@@ -40,8 +43,9 @@ func (s *CartTestSuite) SetupSuite() {
 	s.pim = mock_cart.NewMockPIMClient(ctrl)
 	s.loms = mock_cart.NewMockLOMSClient(ctrl)
 	s.wp = mock_worker_pool.NewMockWorkerPool(ctrl)
+	s.cache = mock_cache.NewMockCache(ctrl)
 
-	s.cart = New(s.rep, s.pim, s.loms)
+	s.cart = New(s.rep, s.pim, s.loms, s.cache, zap.NewNop())
 }
 
 func (s *CartTestSuite) TestCartAdd() {
@@ -53,6 +57,7 @@ func (s *CartTestSuite) TestCartAdd() {
 	ctx := context.Background()
 
 	s.Run("Product not found in pim", func() {
+		s.cache.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil)
 		s.pim.EXPECT().GetProductInfo(gomock.Any(), fItem.SKU).Return(nil, pim.ErrProductNotFound)
 
 		_, err := s.cart.Add(ctx, fItem.UserID, fItem.SKU, 1)
@@ -60,6 +65,7 @@ func (s *CartTestSuite) TestCartAdd() {
 	})
 
 	s.Run("Unknown error from pim", func() {
+		s.cache.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil)
 		s.pim.EXPECT().GetProductInfo(gomock.Any(), fItem.SKU).Return(nil, fakeError)
 
 		_, err := s.cart.Add(ctx, fItem.UserID, fItem.SKU, 1)
@@ -67,6 +73,8 @@ func (s *CartTestSuite) TestCartAdd() {
 	})
 
 	s.Run("Stock other error", func() {
+		s.cache.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil)
+		s.cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		s.pim.EXPECT().GetProductInfo(gomock.Any(), fItem.SKU).Return(nil, nil)
 		s.loms.EXPECT().GetStockInfo(gomock.Any(), fItem.SKU).Return(uint32(0), fakeError)
 
@@ -75,6 +83,8 @@ func (s *CartTestSuite) TestCartAdd() {
 	})
 
 	s.Run("Product low availability in stock", func() {
+		s.cache.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil)
+		s.cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		s.pim.EXPECT().GetProductInfo(gomock.Any(), fItem.SKU).Return(nil, nil)
 		s.loms.EXPECT().GetStockInfo(gomock.Any(), fItem.SKU).Return(uint32(10), nil)
 
@@ -86,6 +96,8 @@ func (s *CartTestSuite) TestCartAdd() {
 		var availStock uint32 = 100
 		var addCount uint32 = 10
 
+		s.cache.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil)
+		s.cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		s.pim.EXPECT().GetProductInfo(gomock.Any(), fItem.SKU).Return(nil, nil)
 		s.loms.EXPECT().GetStockInfo(gomock.Any(), fItem.SKU).Return(availStock, nil)
 		s.rep.EXPECT().Add(gomock.Any(), fItem.UserID, fItem.SKU, addCount).Return(nil, fakeError)
@@ -105,6 +117,8 @@ func (s *CartTestSuite) TestCartAdd() {
 			Count:  addCount,
 		}
 
+		s.cache.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil)
+		s.cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		s.pim.EXPECT().GetProductInfo(gomock.Any(), fItem.SKU).Return(nil, nil)
 		s.loms.EXPECT().GetStockInfo(gomock.Any(), fItem.SKU).Return(availStock, nil)
 		s.rep.EXPECT().Add(gomock.Any(), fItem.UserID, fItem.SKU, addCount).Return(wantModel, nil)
@@ -154,6 +168,8 @@ func (s *CartTestSuite) TestCartList() {
 	emptyList := make([]*model.Item, 0)
 
 	s.Run("Cart not found", func() {
+		s.cache.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil)
+		s.cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		s.rep.EXPECT().FindByUser(gomock.Any(), fItem.UserID).Return(emptyList, repository.ErrNotFound)
 
 		_, err := s.cart.List(ctx, s.wp, fItem.UserID)
@@ -161,6 +177,8 @@ func (s *CartTestSuite) TestCartList() {
 	})
 
 	s.Run("Unknown error from repo", func() {
+		s.cache.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil)
+		s.cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		s.rep.EXPECT().FindByUser(gomock.Any(), fItem.UserID).Return(emptyList, fakeError)
 
 		_, err := s.cart.List(ctx, s.wp, fItem.UserID)
@@ -203,6 +221,8 @@ func (s *CartTestSuite) TestCartList() {
 		fakeResults := make(chan *worker_pool.Result)
 
 		s.rep.EXPECT().FindByUser(gomock.Any(), fItem.UserID).Return(fillList, nil)
+		s.cache.EXPECT().Get(gomock.Any(), gomock.Any()).Return(nil, nil).MaxTimes(len(fillList))
+		s.cache.EXPECT().Set(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).MaxTimes(len(fillList))
 		s.pim.EXPECT().GetProductInfo(gomock.Any(), gomock.Any()).Return(&fakeProductInfo, nil).MaxTimes(len(fillList))
 		s.wp.EXPECT().Run(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, tasks <-chan worker_pool.Task, proc worker_pool.Processor) <-chan *worker_pool.Result {
 			go func() {
