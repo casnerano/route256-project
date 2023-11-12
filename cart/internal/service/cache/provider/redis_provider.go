@@ -17,7 +17,7 @@ func NewRedis(client *redis.Client) *Redis {
 	}
 }
 
-func (r Redis) Has(ctx context.Context, key string) (bool, error) {
+func (r *Redis) Has(ctx context.Context, key string) (bool, error) {
 	count, err := r.client.Exists(ctx, key).Result()
 	if err != nil {
 		return false, err
@@ -26,7 +26,7 @@ func (r Redis) Has(ctx context.Context, key string) (bool, error) {
 	return count > 0, nil
 }
 
-func (r Redis) Get(ctx context.Context, key string) (*string, error) {
+func (r *Redis) Get(ctx context.Context, key string) (*string, error) {
 	value, err := r.client.Get(ctx, key).Result()
 	if err == redis.Nil {
 		return nil, nil
@@ -37,7 +37,7 @@ func (r Redis) Get(ctx context.Context, key string) (*string, error) {
 	return &value, nil
 }
 
-func (r Redis) Set(ctx context.Context, key string, value string) error {
+func (r *Redis) Set(ctx context.Context, key string, value string) error {
 	_, err := r.client.Set(ctx, key, value, time.Duration(0)).Result()
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func (r Redis) Set(ctx context.Context, key string, value string) error {
 	return nil
 }
 
-func (r Redis) Delete(ctx context.Context, key string) error {
+func (r *Redis) Delete(ctx context.Context, key string) error {
 	_, err := r.client.Del(ctx, key, key).Result()
 	if err != nil {
 		return err
